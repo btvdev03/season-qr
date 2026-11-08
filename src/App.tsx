@@ -24,8 +24,8 @@ export default function App() {
   const sceneManagerRef = useRef<SceneManager | null>(null)
 
   // Core App State
-  const [url, setUrl] = useState<string>('https://icqr.com/')
-  const [inputUrl, setInputUrl] = useState<string>('https://icqr.com/')
+  const [url, setUrl] = useState<string>('https://btvdev03.github.io/season-qr/')
+  const [inputUrl, setInputUrl] = useState<string>('https://btvdev03.github.io/season-qr/')
   const [selectedSeason, setSelectedSeason] = useState<SeasonKey>('summer')
   const [selectedStyle, setSelectedStyle] = useState<StyleKey>('tree')
   const [viewMode, setViewMode] = useState<ViewMode>('isometric')
@@ -141,8 +141,6 @@ export default function App() {
         return 'from-[#fefcf8] via-[#fbf3e6] to-[#f4e4d0]'
       case 'winter':
         return 'from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0]'
-      case 'cyberpunk':
-        return 'from-[#070913] via-[#0d1021] to-[#150d28] text-white'
       case 'summer':
       default:
         return 'from-[#f8faf7] via-[#f1f7f1] to-[#e4ede5]'
@@ -158,8 +156,6 @@ export default function App() {
         return 'radial-gradient(circle at 50% 46%, rgba(245, 158, 11, 0.22) 0%, rgba(253, 230, 138, 0.35) 30%, transparent 68%)'
       case 'winter':
         return 'radial-gradient(circle at 50% 46%, rgba(56, 189, 248, 0.22) 0%, rgba(224, 242, 254, 0.4) 30%, transparent 68%)'
-      case 'cyberpunk':
-        return 'radial-gradient(circle at 50% 46%, rgba(6, 182, 212, 0.24) 0%, rgba(217, 70, 239, 0.2) 32%, transparent 70%)'
       case 'summer':
       default:
         return 'radial-gradient(circle at 50% 46%, rgba(74, 222, 128, 0.24) 0%, rgba(187, 247, 208, 0.35) 30%, transparent 68%)'
@@ -185,12 +181,6 @@ export default function App() {
           label: 'Đông Băng Tuyết',
           icon: '❄️',
           color: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800',
-        }
-      case 'cyberpunk':
-        return {
-          label: 'Cyberpunk Neon',
-          icon: '⚡',
-          color: 'bg-fuchsia-950/70 text-fuchsia-300 border-fuchsia-700',
         }
       case 'summer':
       default:
@@ -266,7 +256,7 @@ export default function App() {
           </button>
 
           <a
-            href="https://github.com"
+            href="https://github.com/btvdev03/season-qr"
             target="_blank"
             rel="noreferrer"
             className="p-2.5 rounded-xl bg-white/80 dark:bg-stone-800/80 hover:bg-white dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white border border-stone-200/80 dark:border-stone-700 shadow-sm transition-all"
@@ -384,35 +374,31 @@ export default function App() {
           <div className="flex items-center justify-between px-1 text-[11px] font-medium text-stone-500 dark:text-stone-400">
             <span className="opacity-70 text-[10px]">Gợi ý nhanh:</span>
             <div className="flex items-center gap-1">
-              {['Facebook', 'TikTok', 'Portfolio', 'Website'].map((name) => {
-                const map: Record<string, string> = {
-                  Facebook: 'https://facebook.com/',
-                  TikTok: 'https://tiktok.com/',
-                  Portfolio: 'https://seasonqr.dev/',
-                  Website: 'https://icqr.com/',
-                }
-                return (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => handleQuickPreset(map[name])}
-                    className="px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 hover:bg-white dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-700 text-[10px] transition-all"
-                  >
-                    {name}
-                  </button>
-                )
-              })}
+              {[
+                { name: 'SeasonQR', url: 'https://btvdev03.github.io/season-qr/' },
+                { name: 'GitHub Repo', url: 'https://github.com/btvdev03/season-qr' },
+                { name: 'Profile', url: 'https://github.com/btvdev03' },
+                { name: 'Portfolio', url: 'https://btvdev03.github.io/' },
+              ].map(({ name, url: presetUrl }) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => handleQuickPreset(presetUrl)}
+                  className="px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 hover:bg-white dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-700 text-[10px] transition-all"
+                >
+                  {name}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Row 2: 5-Season Segmented Tab Switcher */}
+          {/* Row 2: 4-Season Segmented Tab Switcher */}
           <div className="flex items-center justify-between gap-1 p-1 rounded-2xl bg-stone-100/90 dark:bg-stone-800/90 border border-stone-200/80 dark:border-stone-700/80 text-xs font-semibold">
             {[
               { id: 'spring', label: 'Xuân', icon: '🌸', activeClass: 'bg-pink-100 text-pink-900 border-pink-300 shadow-xs' },
               { id: 'summer', label: 'Hạ', icon: '☀️', activeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 shadow-xs' },
               { id: 'autumn', label: 'Thu', icon: '🍁', activeClass: 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs' },
               { id: 'winter', label: 'Đông', icon: '❄️', activeClass: 'bg-sky-100 text-sky-900 border-sky-300 shadow-xs' },
-              { id: 'cyberpunk', label: 'Cyber', icon: '⚡', activeClass: 'bg-fuchsia-900/60 text-fuchsia-200 border-fuchsia-600 shadow-xs' },
             ].map((s) => {
               const isSelected = selectedSeason === s.id
               return (

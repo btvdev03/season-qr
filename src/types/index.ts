@@ -1,5 +1,5 @@
-export type SeasonKey = 'auto' | 'spring' | 'summer' | 'autumn' | 'winter' | 'cyberpunk'
-export type ActualSeason = 'spring' | 'summer' | 'autumn' | 'winter' | 'cyberpunk'
+export type SeasonKey = 'auto' | 'spring' | 'summer' | 'autumn' | 'winter'
+export type ActualSeason = 'spring' | 'summer' | 'autumn' | 'winter'
 export type StyleKey = 'tree' | 'island' | 'zen'
 export type ViewMode = 'isometric' | 'topDown'
 

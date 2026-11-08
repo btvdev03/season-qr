@@ -87,14 +87,19 @@ export class SceneManager {
   private readonly ISO_TARGET = new THREE.Vector3(0, 5.5, 0);
   private readonly ISO_UP = new THREE.Vector3(0, 1, 0);
 
-  // Height ~36 gives full view of the 24-unit slab with comfortable padding
-  private readonly SCAN_POS = new THREE.Vector3(0, 36, 0.0001);
-  private readonly SCAN_TARGET = new THREE.Vector3(0, 0, 0);
+  // Framing in Scan Mode:
+  // In scan mode (viewMode === 'topDown'), the floating dock sits at the bottom (~140px).
+  // Because SCAN_UP is (0, 0, -1), negative Z corresponds to UP on the screen.
+  // Setting camera target to +3.2 along Z shifts the diorama upward in screen space
+  // (centering QR slab at y=+0.189, bottom edge at y=-0.521), framing the 24-unit slab
+  // comfortably in the upper/middle viewport with generous padding and 0% occlusion by the bottom dock.
+  private readonly SCAN_POS = new THREE.Vector3(0, 44, 3.2 + 0.0001);
+  private readonly SCAN_TARGET = new THREE.Vector3(0, 0, 3.2);
   private readonly SCAN_UP = new THREE.Vector3(0, 0, -1); // Up vector makes QR orientation upright
 
   constructor(config: SceneManagerConfig) {
     this.container = config.container;
-    this.currentUrl = config.initialUrl ?? 'https://github.com';
+    this.currentUrl = config.initialUrl ?? 'https://btvdev03.github.io/season-qr/';
     this.currentSeason = getSeasonTheme(config.initialSeason ?? 'spring');
     this.currentStyle = getStyle(config.initialStyle ?? 'tree');
     this.isAutoRotating = config.autoRotate ?? false;
@@ -466,13 +471,13 @@ export class SceneManager {
     const prevUp = this.camera.up.clone();
     const prevProgress = this.scanModeProgress;
 
-    // Prepare temporary snapshot camera & decor state
+    // Prepare temporary snapshot camera & decor state (centered for clean square export)
     if (renderTopDown) {
       this.scanModeProgress = 1;
       this.applyScanModeDecor();
-      this.camera.position.copy(this.SCAN_POS);
+      this.camera.position.set(0, 36, 0.0001);
       this.camera.up.copy(this.SCAN_UP);
-      this.camera.lookAt(this.SCAN_TARGET);
+      this.camera.lookAt(0, 0, 0);
     }
 
     this.camera.aspect = width / height;
@@ -489,6 +494,8 @@ export class SceneManager {
     this.camera.position.copy(prevPos);
     this.controls.target.copy(prevTarget);
     this.camera.up.copy(prevUp);
+    this.camera.lookAt(prevTarget);
+    this.controls.update();
     this.camera.aspect = prevWidth / prevHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(prevWidth, prevHeight);

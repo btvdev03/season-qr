@@ -7,14 +7,13 @@
  */
 
 export type NaturalSeasonId = 'spring' | 'summer' | 'autumn' | 'winter';
-export type SeasonId = NaturalSeasonId | 'cyberpunk';
+export type SeasonId = NaturalSeasonId;
 
 export type WeatherParticleType =
   | 'petals'
   | 'fireflies'
   | 'leaves'
-  | 'snow'
-  | 'cyber-sparks';
+  | 'snow';
 
 /**
  * Ground & QR Base Palette
@@ -321,55 +320,6 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       rising: false,
     },
   },
-
-  cyberpunk: {
-    id: 'cyberpunk',
-    name: 'Cyberpunk Neon',
-    vietnameseName: 'Cyberpunk Tương Lai',
-    icon: '⚡',
-    description: 'Digital neon grid, luminescent crystal nodes, and cyan data sparks flowing in the dark.',
-    vietnameseDescription: 'Mạng lưới dữ liệu phát sáng neon, tinh thể kỹ thuật số và luồng xung điện.',
-    ground: {
-      darkModule: '#050914', // Pitch black onyx
-      lightModule: '#f8fafc', // High contrast crisp light
-      groundSlab: '#0f172a',
-      groundRim: '#06b6d4',
-      finderDark: '#000000',
-      finderLight: '#00f5ff',
-    },
-    foliage: {
-      primary: '#d946ef', // Neon fuchsia hologram
-      secondary: '#06b6d4', // High-voltage cyan
-      accent: '#00f5ff', // Electric laser cyan
-      subAccent: '#a855f7',
-    },
-    structure: {
-      trunkPrimary: '#1e1b4b',
-      trunkSecondary: '#312e81',
-      rockPrimary: '#18181b',
-      rockSecondary: '#27272a',
-    },
-    lighting: {
-      ambientColor: '#2e1065',
-      ambientIntensity: 0.75,
-      sunColor: '#06b6d4',
-      sunIntensity: 1.2,
-      sunPosition: [12, 24, 12],
-      skyColor: '#030712',
-      fogColor: '#050a17',
-      fogDensity: 0.006,
-    },
-    weather: {
-      type: 'cyber-sparks',
-      count: 40,
-      speed: 0.8,
-      size: 0.35,
-      colors: ['#00f0ff', '#ff007f', '#a855f7', '#00ffaa'],
-      swayAmplitude: 0.4,
-      swayFrequency: 3.5,
-      rising: true,
-    },
-  },
 };
 
 /**
@@ -388,5 +338,4 @@ export const AVAILABLE_SEASONS: SeasonTheme[] = [
   SEASONS.summer,
   SEASONS.autumn,
   SEASONS.winter,
-  SEASONS.cyberpunk,
 ];

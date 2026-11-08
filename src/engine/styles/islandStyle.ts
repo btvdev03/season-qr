@@ -42,13 +42,13 @@ export const islandStyle: QRStyleGenerator = {
     const rockMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(season.structure.rockPrimary),
       roughness: 0.9,
-      metalness: season.id === 'cyberpunk' ? 0.5 : 0.05,
+      metalness: 0.05,
     });
 
     const rockSecMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(season.structure.rockSecondary),
       roughness: 0.85,
-      metalness: season.id === 'cyberpunk' ? 0.6 : 0.1,
+      metalness: 0.1,
     });
 
     // Layered tapering rock chunks beneath the slab (-Y)
@@ -188,17 +188,11 @@ export const islandStyle: QRStyleGenerator = {
 
     // 5. Stylized Floating Low-Poly Clouds Hovering Near Island
     const cloudMat = new THREE.MeshStandardMaterial({
-      color:
-        season.id === 'cyberpunk'
-          ? new THREE.Color('#38bdf8')
-          : new THREE.Color('#ffffff'),
+      color: new THREE.Color('#ffffff'),
       roughness: 0.3,
       transparent: true,
-      opacity: season.id === 'cyberpunk' ? 0.7 : 0.88,
-      emissive:
-        season.id === 'cyberpunk'
-          ? new THREE.Color('#0284c7').multiplyScalar(0.4)
-          : new THREE.Color('#ffffff').multiplyScalar(0.08),
+      opacity: 0.88,
+      emissive: new THREE.Color('#ffffff').multiplyScalar(0.08),
     });
 
     const cloudCount = 3;

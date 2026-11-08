@@ -101,7 +101,7 @@ export function buildQRBase(
   const rimMat = new THREE.MeshStandardMaterial({
     color: new THREE.Color(season.ground.groundRim),
     roughness: 0.7,
-    metalness: season.id === 'cyberpunk' ? 0.8 : 0.15,
+    metalness: 0.15,
   });
   const rimMesh = new THREE.Mesh(rimGeo, rimMat);
   rimMesh.position.y = -slabDepth * 0.18;
@@ -135,11 +135,8 @@ export function buildQRBase(
   const standardMat = new THREE.MeshStandardMaterial({
     color: new THREE.Color(season.ground.darkModule),
     roughness: 0.25,
-    metalness: season.id === 'cyberpunk' ? 0.5 : 0.05,
-    emissive:
-      season.id === 'cyberpunk'
-        ? new THREE.Color(season.ground.darkModule).multiplyScalar(0.2)
-        : new THREE.Color(0x000000),
+    metalness: 0.05,
+    emissive: new THREE.Color(0x000000),
   });
 
   // Finder pattern dark modules material (pure black / maximum contrast)

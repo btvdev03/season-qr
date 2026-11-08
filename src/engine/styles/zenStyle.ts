@@ -82,14 +82,8 @@ export const zenStyle: QRStyleGenerator = {
     // Light Box (Hibukuro) with glowing window
     const lBoxGeo = new THREE.BoxGeometry(0.8, 0.75, 0.8);
     const lBoxMat = new THREE.MeshStandardMaterial({
-      color:
-        season.id === 'cyberpunk'
-          ? new THREE.Color('#06b6d4')
-          : new THREE.Color('#fffae0'),
-      emissive:
-        season.id === 'cyberpunk'
-          ? new THREE.Color('#00ffff')
-          : new THREE.Color('#ffb703'),
+      color: new THREE.Color('#fffae0'),
+      emissive: new THREE.Color('#ffb703'),
       emissiveIntensity: 0.85,
       roughness: 0.3,
     });
@@ -112,7 +106,7 @@ export const zenStyle: QRStyleGenerator = {
 
     // Warm glow point light from lantern
     const lanternLight = new THREE.PointLight(
-      season.id === 'cyberpunk' ? '#00ffff' : '#ffb703',
+      '#ffb703',
       1.2,
       8
     );
@@ -170,19 +164,13 @@ export const zenStyle: QRStyleGenerator = {
     toriiGroup.position.set(tx, 0, tz);
 
     const toriiMat = new THREE.MeshStandardMaterial({
-      color:
-        season.id === 'cyberpunk'
-          ? new THREE.Color('#ec4899')
-          : new THREE.Color('#c0392b'), // Traditional vermilion red
+      color: new THREE.Color('#c0392b'), // Traditional vermilion red
       roughness: 0.5,
-      metalness: season.id === 'cyberpunk' ? 0.7 : 0.1,
+      metalness: 0.1,
     });
 
     const toriiTopMat = new THREE.MeshStandardMaterial({
-      color:
-        season.id === 'cyberpunk'
-          ? new THREE.Color('#06b6d4')
-          : new THREE.Color('#1e1b18'), // Dark black lintel
+      color: new THREE.Color('#1e1b18'), // Dark black lintel
       roughness: 0.6,
     });
 

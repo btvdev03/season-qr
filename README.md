@@ -13,16 +13,15 @@
 
 ## 🇻🇳 Tiếng Việt
 
-**SeasonQR** là ứng dụng web tạo mã QR 3D sống động, kết hợp giữa nghệ thuật thị giác và tính chính xác tuyệt đối của công nghệ mã QR. Người dùng có thể chiêm ngưỡng mã QR hóa thân thành một khu vườn xuân anh đào rơi, hòn đảo mùa hè nhiệt đới, cánh rừng phong mùa thu, thế giới băng tuyết mùa đông hay cảnh quan Cyberpunk huyền ảo.
+**SeasonQR** là ứng dụng web tạo mã QR 3D sống động, kết hợp giữa nghệ thuật thị giác và tính chính xác tuyệt đối của công nghệ mã QR. Người dùng có thể chiêm ngưỡng mã QR hóa thân thành một khu vườn xuân anh đào rơi, hòn đảo mùa hè nhiệt đới, cánh rừng phong mùa thu hay thế giới băng tuyết mùa đông huyền ảo.
 
 ### ✨ Tính Năng Nổi Bật
 
-1. **4 Mùa & Cyberpunk (5 Themes)**
+1. **4 Mùa Tuyệt Đẹp (4 Themes)**
    - 🌸 **Xuân (Spring)**: Hoa anh đào nở rộ, hiệu ứng hạt cánh hoa bay phấp phới.
    - ☀️ **Hạ (Summer)**: Nắng vàng rực rỡ, đom đóm lập lòe, phong cách biển đảo nhiệt đới.
    - 🍁 **Thu (Autumn)**: Rừng phong lá đỏ cam lãng mạn, lá rụng bay theo gió.
    - ❄️ **Đông (Winter)**: Bông tuyết trắng rơi mềm mại, khối băng ngọc bích tinh khiết.
-   - 🔮 **Cyberpunk**: Đèn Neon tương lai, hiệu ứng Grid số học & tia lửa điện bốc lên.
    - ⏳ **Tự động theo tháng**: Nhận diện mùa thực tế theo lịch máy tính.
 
 2. **3 Phong Cách Kiến Trúc 3D (3 Styles)**
@@ -129,7 +128,7 @@ Hệ thống được thiết kế theo kiến trúc module mở (`QRStyleGenera
 **SeasonQR** is an innovative 3D artistic QR code generator combining visual aesthetics with 100% scannable precision. Powered by Three.js, React 19, and QR Error Correction Level H.
 
 ### Key Features
-- **5 Seasonal Themes**: Spring (cherry petals), Summer (tropical islands & fireflies), Autumn (falling maple leaves), Winter (snow & icy crystals), and Cyberpunk (neon holograms).
+- **4 Seasonal Themes**: Spring (cherry petals), Summer (tropical islands & fireflies), Autumn (falling maple leaves), and Winter (snow & icy crystals).
 - **3 Architectural Styles**: Seasonal Tree, Floating Island, and Zen Garden.
 - **100% Reliable Scanning**: Level H recovery allows up to 30% of modules to be covered by 3D props while maintaining full data integrity.
 - **Top-Down Mode**: Instant 90-degree alignment camera angle for seamless scanning.

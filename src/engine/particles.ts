@@ -7,7 +7,6 @@
  * - Summer: Warm glowing fireflies floating upwards with harmonic drift
  * - Autumn: Red/orange/golden maple leaves fluttering downwards
  * - Winter: Crystalline snowflakes drifting gently with wind sway
- * - Cyberpunk: Neon data sparks / holographic bits rising and glitching
  */
 
 import * as THREE from 'three';
@@ -143,35 +142,6 @@ function createParticleTexture(type: WeatherParticleType): THREE.CanvasTexture {
       ctx.restore();
       break;
     }
-
-    case 'cyber-sparks': {
-      // Glowing neon diamond / digital data packet
-      ctx.save();
-      ctx.translate(32, 32);
-
-      // Outer glow
-      const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, 26);
-      grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
-      grad.addColorStop(0.3, 'rgba(0, 240, 255, 0.9)');
-      grad.addColorStop(0.7, 'rgba(255, 0, 160, 0.4)');
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(0, 0, 26, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Sharp central diamond
-      ctx.beginPath();
-      ctx.moveTo(0, -18);
-      ctx.lineTo(14, 0);
-      ctx.lineTo(0, 18);
-      ctx.lineTo(-14, 0);
-      ctx.closePath();
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      ctx.restore();
-      break;
-    }
   }
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -280,11 +250,11 @@ export class WeatherParticleSystem {
       size: weather.size * 2.2,
       map: this.texture,
       transparent: true,
-      opacity: weather.type === 'cyber-sparks' ? 0.95 : 0.85,
+      opacity: 0.85,
       vertexColors: true,
       depthWrite: false,
       blending:
-        weather.type === 'fireflies' || weather.type === 'cyber-sparks'
+        weather.type === 'fireflies'
           ? THREE.AdditiveBlending
           : THREE.NormalBlending,
     });
@@ -346,11 +316,8 @@ export class WeatherParticleSystem {
 
     this.geometry.attributes.position.needsUpdate = true;
 
-    // Subtle breathing pulse for glowing particles (fireflies / sparks)
-    if (
-      this.material &&
-      (weather.type === 'fireflies' || weather.type === 'cyber-sparks')
-    ) {
+    // Subtle breathing pulse for glowing particles (fireflies)
+    if (this.material && weather.type === 'fireflies') {
       this.material.size =
         weather.size * 2.2 * (0.85 + Math.sin(this.totalTime * 3) * 0.15);
     }

@@ -66,15 +66,6 @@ export const SEASONS: SeasonInfo[] = [
     accentColor: 'sky',
     badgeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
   },
-  {
-    id: 'cyberpunk',
-    name: 'Cyberpunk',
-    emoji: '🔮',
-    description: 'Ánh đèn Neon tương lai, hiệu ứng Grid số học & Hologram',
-    color: '#d946ef',
-    accentColor: 'fuchsia',
-    badgeClass: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/40',
-  },
 ]
 
 export const STYLES: StyleInfo[] = [
