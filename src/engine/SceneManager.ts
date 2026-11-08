@@ -126,17 +126,14 @@ export class SceneManager {
 
     this.container.appendChild(this.renderer.domElement);
 
-    // 4. Setup OrbitControls
+    // 4. Setup OrbitControls - Fixed camera for zero lag & perfect framing
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.08;
+    this.controls.enableDamping = false;
+    this.controls.enableRotate = false; // Fixed camera as user requested
+    this.controls.enableZoom = false;   // No zoom lag
+    this.controls.enablePan = false;    // No pan drift
     this.controls.target.copy(this.ISO_TARGET);
-    this.controls.minDistance = 14;
-    this.controls.maxDistance = 60;
-    this.controls.minPolarAngle = Math.PI / 4.5;
-    this.controls.maxPolarAngle = Math.PI / 2.15;
-    this.controls.autoRotate = this.isAutoRotating;
-    this.controls.autoRotateSpeed = 0.8;
+    this.controls.autoRotate = false;
 
     // 5. Setup Lighting
     this.ambientLight = new THREE.AmbientLight(
