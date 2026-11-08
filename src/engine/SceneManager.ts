@@ -82,8 +82,8 @@ export class SceneManager {
   private destCamUp = new THREE.Vector3();
 
   // Presets
-  private readonly ISO_POS = new THREE.Vector3(22, 14, 22);
-  private readonly ISO_TARGET = new THREE.Vector3(0, 7.5, 0);
+  private readonly ISO_POS = new THREE.Vector3(22, 16, 22);
+  private readonly ISO_TARGET = new THREE.Vector3(0, 5.5, 0);
   private readonly ISO_UP = new THREE.Vector3(0, 1, 0);
 
   // Height ~36 gives full view of the 24-unit slab with comfortable padding
