@@ -269,10 +269,7 @@ export class SceneManager {
     this.sunLight.intensity = lighting.sunIntensity;
     this.sunLight.position.set(...lighting.sunPosition);
 
-    this.scene.fog = new THREE.FogExp2(
-      lighting.fogColor,
-      lighting.fogDensity
-    );
+    this.scene.fog = null;
 
     if (this.particles) {
       this.particles.setSeason(this.currentSeason);
