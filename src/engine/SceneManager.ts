@@ -32,6 +32,7 @@ export interface SceneManagerConfig {
   initialSeason?: string;
   initialStyle?: string;
   autoRotate?: boolean;
+  onViewModeChange?: (mode: ViewMode) => void;
 }
 
 export class SceneManager {
@@ -60,6 +61,9 @@ export class SceneManager {
   private animationFrameId: number | null = null;
   private clock: THREE.Clock;
   private isAutoRotating: boolean = false;
+  private onViewModeChange?: (mode: ViewMode) => void;
+  private pointerStartX: number = 0;
+  private pointerStartY: number = 0;
 
   // Scan Mode Dynamic Morphing State (0 = fully isometric, 1 = fully top-down scan)
   private scanModeProgress: number = 0;
@@ -171,6 +175,9 @@ export class SceneManager {
     this.rebuildScene();
 
     // 8. Listeners
+    this.onViewModeChange = config.onViewModeChange;
+    this.renderer.domElement.addEventListener('pointerdown', this.onPointerDown);
+    this.renderer.domElement.addEventListener('pointerup', this.onPointerUp);
     this.setupResizeObserver();
     window.addEventListener('resize', this.onWindowResize);
 
@@ -195,6 +202,20 @@ export class SceneManager {
 
   private onWindowResize = (): void => {
     this.handleResize();
+  };
+
+  private onPointerDown = (e: PointerEvent): void => {
+    this.pointerStartX = e.clientX;
+    this.pointerStartY = e.clientY;
+  };
+
+  private onPointerUp = (e: PointerEvent): void => {
+    const dx = Math.abs(e.clientX - this.pointerStartX);
+    const dy = Math.abs(e.clientY - this.pointerStartY);
+    // Tap without significant drag triggers mode toggle
+    if (dx < 6 && dy < 6 && e.button === 0) {
+      this.toggleViewMode();
+    }
   };
 
   public handleResize(): void {
@@ -265,9 +286,15 @@ export class SceneManager {
   private applyScanModeDecor(): void {
     if (!this.styleGroup) return;
 
+    // 1. Morphing Leaf-to-QR Transformer (ICQR Magic Mechanic)
+    const morphable = this.styleGroup as { updateMorph?: (p: number) => void } | null;
+    if (morphable && typeof morphable.updateMorph === 'function') {
+      morphable.updateMorph(this.scanModeProgress);
+    }
+
+    // 2. Generic above-ground decorations for other styles
     const decor = this.styleGroup.getObjectByName('DecorGroup');
     if (decor) {
-      // Smoothly shrink decorations into center point when approaching top-down view
       const scale = Math.max(0.0001, 1 - Math.pow(this.scanModeProgress, 1.5));
       decor.scale.set(scale, scale, scale);
       decor.visible = this.scanModeProgress < 0.99;
@@ -278,7 +305,7 @@ export class SceneManager {
       this.particles.group.visible = this.scanModeProgress < 0.7;
     }
 
-    // Disable directional castShadow in scan mode to guarantee zero false shadows on QR code
+    // In scan mode, disable directional castShadow to eliminate any false shadows on the QR code
     if (this.scanModeProgress > 0.05) {
       this.sunLight.castShadow = false;
       this.ambientLight.intensity = THREE.MathUtils.lerp(
@@ -325,6 +352,7 @@ export class SceneManager {
   public setViewMode(mode: ViewMode, animate: boolean = true): void {
     if (this.viewMode === mode && !this.isTransitioning) return;
     this.viewMode = mode;
+    this.onViewModeChange?.(mode);
 
     const targetPos = mode === 'topDown' ? this.SCAN_POS : this.ISO_POS;
     const targetLook = mode === 'topDown' ? this.SCAN_TARGET : this.ISO_TARGET;
@@ -535,6 +563,8 @@ export class SceneManager {
     }
 
     window.removeEventListener('resize', this.onWindowResize);
+    this.renderer.domElement.removeEventListener('pointerdown', this.onPointerDown);
+    this.renderer.domElement.removeEventListener('pointerup', this.onPointerUp);
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
