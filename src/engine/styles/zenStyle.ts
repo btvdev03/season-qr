@@ -36,7 +36,7 @@ export const zenStyle: QRStyleGenerator = {
     rootGroup.add(baseLayout.group);
 
     const zenPropsGroup = new THREE.Group();
-    zenPropsGroup.name = 'ZenProps';
+    zenPropsGroup.name = 'DecorGroup';
 
     const rockMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(season.structure.rockPrimary),

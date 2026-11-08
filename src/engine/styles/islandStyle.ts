@@ -146,7 +146,7 @@ export const islandStyle: QRStyleGenerator = {
     // 4. Low-Profile Seasonal Flora on Top of Island
     // We deterministically pick safe non-reserved, non-finder modules
     const floraGroup = new THREE.Group();
-    floraGroup.name = 'IslandFlora';
+    floraGroup.name = 'DecorGroup';
 
     // Mini Bonsai Tree in a safe quadrant (avoiding finder patterns)
     // Safe spot: e.g. bottom-right area (row ~ size - 5, col ~ size - 5)

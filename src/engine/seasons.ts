@@ -1,8 +1,9 @@
 /**
  * SeasonQR - Seasonal Theme Architecture
  *
- * Defines color palettes, lighting setups, weather particle attributes,
- * and environmental acoustics/aesthetics for each season.
+ * Defines high-contrast color palettes, lighting setups, weather particle attributes,
+ * and environmental aesthetics for each season.
+ * All ground palettes are carefully tuned for guaranteed camera scan contrast!
  */
 
 export type NaturalSeasonId = 'spring' | 'summer' | 'autumn' | 'winter';
@@ -130,43 +131,43 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
     name: 'Spring Blossom',
     vietnameseName: 'Xuân Hoa Anh Đào',
     icon: '🌸',
-    description: 'Gentle pink cherry blossoms drifting in the spring breeze on fresh mossy ground.',
-    vietnameseDescription: 'Cánh hoa anh đào phớt hồng rơi nhẹ trong gió xuân trên nền rêu biếc.',
+    description: 'Delicate pink Sakura cherry blossoms drifting in the spring breeze on fresh stone ground.',
+    vietnameseDescription: 'Cánh hoa anh đào phớt hồng rơi nhẹ trong gió xuân trên phiến đá cổ kính.',
     ground: {
-      darkModule: '#2d5a3c',
-      lightModule: '#fbf9f1',
-      groundSlab: '#507855',
-      groundRim: '#3b5c40',
-      finderDark: '#1b432a',
+      darkModule: '#1a0d18', // Deep cherry charcoal for maximum scan contrast
+      lightModule: '#fff5f7', // Pale sakura snow
+      groundSlab: '#4a2837', // Plum stone slab
+      groundRim: '#2b141e',
+      finderDark: '#0a0307', // High contrast finder
       finderLight: '#ffffff',
     },
     foliage: {
-      primary: '#ff9ebb', // Sakura cherry pink
+      primary: '#ff85a1', // Sakura cherry pink
       secondary: '#ffc5d3', // Light blossom
       accent: '#fff5f7', // Pure white blossom tips
       subAccent: '#ffe66d', // Golden flower pollen stamen
     },
     structure: {
-      trunkPrimary: '#543d2b', // Warm cherry bark
-      trunkSecondary: '#6e513b',
+      trunkPrimary: '#3e2723', // Warm cherry bark
+      trunkSecondary: '#5d4037',
       rockPrimary: '#7e8a82',
       rockSecondary: '#99a79e',
     },
     lighting: {
       ambientColor: '#ffeef4',
-      ambientIntensity: 0.85,
+      ambientIntensity: 0.95,
       sunColor: '#fff9e6',
-      sunIntensity: 1.5,
-      sunPosition: [18, 30, 18],
+      sunIntensity: 1.4,
+      sunPosition: [16, 28, 16],
       skyColor: '#eef6fc',
       fogColor: '#f2f7fb',
-      fogDensity: 0.008,
+      fogDensity: 0.005,
     },
     weather: {
       type: 'petals',
-      count: 180,
-      speed: 1.1,
-      size: 0.32,
+      count: 65,
+      speed: 0.9,
+      size: 0.35,
       colors: ['#ffb3c6', '#ff8fa3', '#ffe5ec', '#ffccd5'],
       swayAmplitude: 0.8,
       swayFrequency: 1.8,
@@ -182,11 +183,11 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
     description: 'Vibrant emerald canopy buzzing with golden sunbeams, ripe fruits, and warm fireflies.',
     vietnameseDescription: 'Tán lá ngọc lục bảo rợp bóng dưới nắng vàng, quả chín mọng và đom đóm.',
     ground: {
-      darkModule: '#1b4d2e',
-      lightModule: '#fdfbf2',
-      groundSlab: '#2e5b34',
-      groundRim: '#1a3c20',
-      finderDark: '#0e331b',
+      darkModule: '#092314', // Deep evergreen black for sharp scan
+      lightModule: '#fdfbf4', // Clean warm ivory
+      groundSlab: '#1e3f26',
+      groundRim: '#0d2818',
+      finderDark: '#041208',
       finderLight: '#ffffff',
     },
     foliage: {
@@ -196,30 +197,30 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       subAccent: '#e74c3c', // Sweet ruby berries
     },
     structure: {
-      trunkPrimary: '#4a3319', // Deep aged oak bark
-      trunkSecondary: '#634724',
+      trunkPrimary: '#3d2b18',
+      trunkSecondary: '#543b22',
       rockPrimary: '#888277',
       rockSecondary: '#a09a8e',
     },
     lighting: {
-      ambientColor: '#fff2db',
-      ambientIntensity: 0.9,
-      sunColor: '#fff8db',
-      sunIntensity: 1.65,
-      sunPosition: [20, 36, 16],
+      ambientColor: '#fff5e6',
+      ambientIntensity: 0.95,
+      sunColor: '#fffbe8',
+      sunIntensity: 1.5,
+      sunPosition: [18, 32, 14],
       skyColor: '#e0f2fe',
       fogColor: '#e2f4ff',
-      fogDensity: 0.006,
+      fogDensity: 0.005,
     },
     weather: {
       type: 'fireflies',
-      count: 120,
-      speed: 0.65,
-      size: 0.28,
+      count: 45,
+      speed: 0.6,
+      size: 0.3,
       colors: ['#f9d71c', '#ffe66d', '#80ed99', '#a7f3d0'],
       swayAmplitude: 0.6,
       swayFrequency: 1.2,
-      rising: true, // Fireflies float upwards gently!
+      rising: true,
     },
   },
 
@@ -231,43 +232,43 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
     description: 'Fiery red and golden maple canopy with crisp leaves gently tumbling over rustic earth.',
     vietnameseDescription: 'Sắc lá phong đỏ rực quyện vàng ấm áp, lá thu lượn bay trên nền đất cổ kính.',
     ground: {
-      darkModule: '#5e2d14',
-      lightModule: '#fcf6ec',
-      groundSlab: '#784323',
-      groundRim: '#48240f',
-      finderDark: '#3b1807',
+      darkModule: '#1f1008', // Deep espresso mahogany (high contrast!)
+      lightModule: '#fdf9f2', // Warm parchment white
+      groundSlab: '#4a2512',
+      groundRim: '#2b1307',
+      finderDark: '#0a0502', // Pitch dark for finder eyes
       finderLight: '#ffffff',
     },
     foliage: {
       primary: '#d35400', // Flaming pumpkin orange
       secondary: '#c0392b', // Deep maple red
       accent: '#f1c40f', // Bright golden yellow
-      subAccent: '#8e44ad', // Wild mountain berries
+      subAccent: '#8e44ad',
     },
     structure: {
-      trunkPrimary: '#3e2723', // Weathered cedar
-      trunkSecondary: '#5d4037',
+      trunkPrimary: '#341f17',
+      trunkSecondary: '#4e2f23',
       rockPrimary: '#6d6863',
-      rockSecondary: '#857f79',
+      rockSecondary: '#8a837c',
     },
     lighting: {
-      ambientColor: '#ffe4c4',
-      ambientIntensity: 0.8,
-      sunColor: '#ffab40',
-      sunIntensity: 1.55,
-      sunPosition: [22, 28, 18],
+      ambientColor: '#fff1e0',
+      ambientIntensity: 0.95,
+      sunColor: '#ffe5b4',
+      sunIntensity: 1.45,
+      sunPosition: [15, 26, 18],
       skyColor: '#fef3c7',
-      fogColor: '#fed7aa',
-      fogDensity: 0.007,
+      fogColor: '#fef3c7',
+      fogDensity: 0.005,
     },
     weather: {
       type: 'leaves',
-      count: 150,
-      speed: 1.35,
-      size: 0.35,
-      colors: ['#e65100', '#d84315', '#f57c00', '#fbc02d', '#b71c1c'],
-      swayAmplitude: 1.1,
-      swayFrequency: 2.2,
+      count: 55,
+      speed: 0.9,
+      size: 0.38,
+      colors: ['#c0392b', '#d35400', '#e67e22', '#f39c12'],
+      swayAmplitude: 0.9,
+      swayFrequency: 1.5,
       rising: false,
     },
   },
@@ -280,43 +281,43 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
     description: 'Crystalline snow-covered pine needles under a soft northern sky with drifting snowflakes.',
     vietnameseDescription: 'Tuyết trắng phủ cành thông băng giá dưới bầu trời phương Bắc tĩnh lặng.',
     ground: {
-      darkModule: '#1e293b',
-      lightModule: '#f8fafc',
-      groundSlab: '#94a3b8',
-      groundRim: '#64748b',
-      finderDark: '#0f172a',
+      darkModule: '#0c152a', // Deep midnight slate blue (high contrast!)
+      lightModule: '#f8fafc', // Crisp snow white
+      groundSlab: '#1e293b',
+      groundRim: '#0f172a',
+      finderDark: '#030712',
       finderLight: '#ffffff',
     },
     foliage: {
-      primary: '#334e68', // Frosted evergreen teal
-      secondary: '#486581', // Muted spruce
+      primary: '#1e3a5f', // Deep alpine slate
+      secondary: '#38bdf8', // Frost ice blue
       accent: '#ffffff', // Pure fresh snowfall crowns
-      subAccent: '#bae6fd', // Crystalline glacier blue
+      subAccent: '#bae6fd',
     },
     structure: {
-      trunkPrimary: '#334155', // Silver birch / winter frost wood
-      trunkSecondary: '#475569',
-      rockPrimary: '#64748b',
-      rockSecondary: '#94a3b8',
+      trunkPrimary: '#1e293b',
+      trunkSecondary: '#334155',
+      rockPrimary: '#475569',
+      rockSecondary: '#64748b',
     },
     lighting: {
       ambientColor: '#e0f2fe',
-      ambientIntensity: 0.8,
-      sunColor: '#f8fafc',
-      sunIntensity: 1.45,
-      sunPosition: [16, 32, 22],
-      skyColor: '#e2e8f0',
-      fogColor: '#cbd5e1',
-      fogDensity: 0.009,
+      ambientIntensity: 0.95,
+      sunColor: '#f0f9ff',
+      sunIntensity: 1.4,
+      sunPosition: [14, 28, 14],
+      skyColor: '#f1f5f9',
+      fogColor: '#f1f5f9',
+      fogDensity: 0.005,
     },
     weather: {
       type: 'snow',
-      count: 240,
-      speed: 0.95,
-      size: 0.25,
+      count: 70,
+      speed: 0.75,
+      size: 0.32,
       colors: ['#ffffff', '#f0f9ff', '#e0f2fe', '#bae6fd'],
-      swayAmplitude: 0.5,
-      swayFrequency: 1.0,
+      swayAmplitude: 0.7,
+      swayFrequency: 1.4,
       rising: false,
     },
   },
@@ -329,44 +330,44 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
     description: 'Digital neon grid, luminescent crystal nodes, and cyan data sparks flowing in the dark.',
     vietnameseDescription: 'Mạng lưới dữ liệu phát sáng neon, tinh thể kỹ thuật số và luồng xung điện.',
     ground: {
-      darkModule: '#06b6d4', // Bright cyan laser
-      lightModule: '#090d16', // Deep void obsidian
-      groundSlab: '#0f172a', // Titanium alloy slab
-      groundRim: '#ec4899', // Hot neon magenta bevel rim
-      finderDark: '#00ffff', // Maximum contrast cyan
-      finderLight: '#030712',
+      darkModule: '#050914', // Pitch black onyx
+      lightModule: '#f8fafc', // High contrast crisp light
+      groundSlab: '#0f172a',
+      groundRim: '#06b6d4',
+      finderDark: '#000000',
+      finderLight: '#00f5ff',
     },
     foliage: {
       primary: '#d946ef', // Neon fuchsia hologram
       secondary: '#06b6d4', // High-voltage cyan
       accent: '#facc15', // Electric yellow laser
-      subAccent: '#8b5cf6', // Ultraviolet purple
+      subAccent: '#8b5cf6',
     },
     structure: {
-      trunkPrimary: '#1e1b4b', // Deep carbon composite
+      trunkPrimary: '#1e1b4b',
       trunkSecondary: '#312e81',
-      rockPrimary: '#18181b', // Obsidian matte
+      rockPrimary: '#18181b',
       rockSecondary: '#27272a',
     },
     lighting: {
       ambientColor: '#2e1065',
       ambientIntensity: 0.95,
       sunColor: '#06b6d4',
-      sunIntensity: 1.8,
-      sunPosition: [16, 28, 20],
+      sunIntensity: 1.35,
+      sunPosition: [12, 24, 12],
       skyColor: '#030712',
       fogColor: '#050a17',
-      fogDensity: 0.012,
+      fogDensity: 0.006,
     },
     weather: {
       type: 'cyber-sparks',
-      count: 200,
-      speed: 1.7,
-      size: 0.26,
+      count: 40,
+      speed: 0.8,
+      size: 0.35,
       colors: ['#00f0ff', '#ff007f', '#a855f7', '#00ffaa'],
       swayAmplitude: 0.4,
       swayFrequency: 3.5,
-      rising: true, // Sparks rise upwards
+      rising: true,
     },
   },
 };

@@ -1,11 +1,12 @@
 /**
  * SeasonQR - Seasonal Tree 3D Style Generator
  *
- * Generates an isometric voxel/low-poly seasonal tree rising from the QR base.
- * - Center trunk footprint is compact (radius ~2 modules), safely preserving QR error recovery.
- * - Branches & foliage are elevated above Y = 6 so the QR base remains scannable.
- * - Foliage & accents use THREE.InstancedMesh for 60+ FPS performance.
- * - Procedural branching is deterministic based on the URL's FNV-1a hash seed.
+ * Generates an isometric voxel/low-poly seasonal tree rising from the QR base:
+ * - Center trunk footprint is compact and slender (radius ~ 0.9 modules), safely preserving QR error recovery.
+ * - Branches & foliage are elevated above Y = 7.5 so the QR base remains scannable.
+ * - Foliage & accents use THREE.InstancedMesh with optimized voxel density for silky smooth 60+ FPS.
+ * - All above-ground decorations are enclosed in a named 'DecorGroup' so the SceneManager can
+ *   smoothly scale/fade them during Top-Down Scan Mode!
  */
 
 import * as THREE from 'three';
@@ -34,7 +35,11 @@ export const treeStyle: QRStyleGenerator = {
     });
     rootGroup.add(baseLayout.group);
 
-    // 2. Trunk Generation
+    // 2. Above-ground Scenery (DecorGroup - scalable for scan mode)
+    const decorGroup = new THREE.Group();
+    decorGroup.name = 'DecorGroup';
+
+    // 3. Trunk & Branches
     const trunkGroup = new THREE.Group();
     trunkGroup.name = 'TreeTrunk';
 
@@ -49,63 +54,43 @@ export const treeStyle: QRStyleGenerator = {
       metalness: season.id === 'cyberpunk' ? 0.6 : 0.1,
     });
 
-    // Root flare voxels at ground level (anchored strictly around center, avoiding finder patterns)
-    const rootFlareCount = 8;
-    const flareRadius = baseLayout.moduleSize * 1.8;
-    for (let i = 0; i < rootFlareCount; i++) {
-      const angle = (i / rootFlareCount) * Math.PI * 2 + rng.range(-0.2, 0.2);
-      const dist = rng.range(flareRadius * 0.7, flareRadius * 1.2);
-      const fx = Math.cos(angle) * dist;
-      const fz = Math.sin(angle) * dist;
-      const fHeight = rng.range(0.6, 1.2);
-      const fWidth = rng.range(0.8, 1.3) * baseLayout.moduleSize;
-
-      const flareGeo = new THREE.BoxGeometry(fWidth, fHeight, fWidth);
-      const flareMesh = new THREE.Mesh(flareGeo, trunkSecMat);
-      flareMesh.position.set(fx, fHeight / 2, fz);
-      flareMesh.rotation.y = angle;
-      flareMesh.castShadow = true;
-      flareMesh.receiveShadow = true;
-      trunkGroup.add(flareMesh);
-    }
-
-    // Main vertical trunk segments rising to height ~8-10
-    const trunkHeight = rng.range(7.5, 9.5);
-    const trunkSegments = 6;
+    // Slender central trunk (strictly centered, minimal ground footprint)
+    const trunkHeight = rng.range(8.0, 10.0);
+    const trunkSegments = 4;
     const segHeight = trunkHeight / trunkSegments;
     const branchTips: { x: number; y: number; z: number }[] = [];
 
     let currentX = 0;
     let currentZ = 0;
-    let currentRadius = baseLayout.moduleSize * 1.4;
+    let currentRadius = baseLayout.moduleSize * 0.95;
 
     for (let s = 0; s < trunkSegments; s++) {
       const yPos = s * segHeight + segHeight / 2;
+      const topR = currentRadius * 0.85;
       const segGeo = new THREE.CylinderGeometry(
-        currentRadius * 0.88,
+        topR,
         currentRadius,
         segHeight,
-        7
+        6
       );
       const segMesh = new THREE.Mesh(segGeo, trunkMat);
       segMesh.position.set(currentX, yPos, currentZ);
       segMesh.castShadow = true;
-      segMesh.receiveShadow = true;
+      segMesh.receiveShadow = false;
       trunkGroup.add(segMesh);
 
-      // Organic trunk taper and subtle lean
-      currentRadius *= 0.88;
-      currentX += rng.range(-0.15, 0.15);
-      currentZ += rng.range(-0.15, 0.15);
+      currentRadius = topR;
+      currentX += rng.range(-0.12, 0.12);
+      currentZ += rng.range(-0.12, 0.12);
     }
 
-    // 3. Branches branching out horizontally & upwards
-    const branchCount = rng.int(4, 6);
+    // 4. Branches branching out horizontally & upwards at high elevation
+    const branchCount = rng.int(4, 5);
     for (let b = 0; b < branchCount; b++) {
-      const bAngle = (b / branchCount) * Math.PI * 2 + rng.range(-0.3, 0.3);
-      const bStartY = trunkHeight * rng.range(0.65, 0.9);
-      const bLength = rng.range(3.2, 5.0);
-      const bElevation = rng.range(0.2, 0.5); // upward tilt
+      const bAngle = (b / branchCount) * Math.PI * 2 + rng.range(-0.25, 0.25);
+      const bStartY = trunkHeight * rng.range(0.7, 0.88);
+      const bLength = rng.range(3.5, 4.8);
+      const bElevation = rng.range(0.25, 0.45); // upward tilt
 
       const bEndX = currentX + Math.cos(bAngle) * bLength;
       const bEndZ = currentZ + Math.sin(bAngle) * bLength;
@@ -116,8 +101,8 @@ export const treeStyle: QRStyleGenerator = {
       const midZ = (currentZ + bEndZ) / 2;
 
       const branchGeo = new THREE.CylinderGeometry(
-        0.28 * baseLayout.moduleSize,
-        0.48 * baseLayout.moduleSize,
+        0.25 * baseLayout.moduleSize,
+        0.42 * baseLayout.moduleSize,
         bLength,
         5
       );
@@ -126,29 +111,21 @@ export const treeStyle: QRStyleGenerator = {
       branchMesh.lookAt(bEndX, bEndY, bEndZ);
       branchMesh.rotateX(Math.PI / 2);
       branchMesh.castShadow = true;
-      branchMesh.receiveShadow = true;
       trunkGroup.add(branchMesh);
 
       branchTips.push({ x: bEndX, y: bEndY, z: bEndZ });
-
-      // Sub-branchlets
-      const subX = bEndX + Math.cos(bAngle + 0.4) * rng.range(1.2, 2.0);
-      const subZ = bEndZ + Math.sin(bAngle + 0.4) * rng.range(1.2, 2.0);
-      const subY = bEndY + rng.range(0.4, 1.0);
-      branchTips.push({ x: subX, y: subY, z: subZ });
     }
 
     // Top crown tip
     branchTips.push({
       x: currentX,
-      y: trunkHeight + rng.range(1.0, 1.8),
+      y: trunkHeight + rng.range(1.0, 1.6),
       z: currentZ,
     });
 
-    rootGroup.add(trunkGroup);
+    decorGroup.add(trunkGroup);
 
-    // 4. Instanced Foliage & Accents
-    // Gather cluster center positions around branch tips
+    // 5. Instanced Foliage & Accents
     const foliageClusterCenters: {
       x: number;
       y: number;
@@ -161,16 +138,16 @@ export const treeStyle: QRStyleGenerator = {
         x: tip.x,
         y: tip.y,
         z: tip.z,
-        radius: rng.range(2.2, 3.4),
+        radius: rng.range(2.0, 2.8),
       });
     }
 
-    // Additional volume filling crown clusters
+    // Volume filling crown cluster
     foliageClusterCenters.push({
       x: currentX,
-      y: trunkHeight + 0.5,
+      y: trunkHeight + 0.6,
       z: currentZ,
-      radius: 3.5,
+      radius: 3.0,
     });
 
     interface FoliageBlock {
@@ -183,48 +160,45 @@ export const treeStyle: QRStyleGenerator = {
     }
 
     const foliageBlocks: FoliageBlock[] = [];
-    const blockSize = baseLayout.moduleSize * 0.9;
+    const blockSize = baseLayout.moduleSize * 1.12;
 
     for (const cluster of foliageClusterCenters) {
-      const voxelCount = rng.int(22, 34);
+      const voxelCount = rng.int(16, 22);
       for (let v = 0; v < voxelCount; v++) {
-        // Spherical distribution
         const theta = rng.angle();
         const phi = Math.acos(rng.range(-1, 1));
         const dist = Math.cbrt(rng.next()) * cluster.radius;
 
         const fx = cluster.x + dist * Math.sin(phi) * Math.cos(theta);
-        const fy = cluster.y + dist * Math.sin(phi) * Math.sin(theta) * 0.8;
+        const fy = cluster.y + dist * Math.sin(phi) * Math.sin(theta) * 0.75;
         const fz = cluster.z + dist * Math.cos(phi);
 
-        // Keep leaves strictly above ground plane (Y >= 4.5) to avoid QR base obstruction
-        if (fy < 4.5) continue;
+        // Keep leaves well elevated (Y >= 6.5) so base remains visible
+        if (fy < 6.5) continue;
 
-        const isAccent = rng.chance(0.22);
+        const isAccent = rng.chance(0.2);
         const isPrimary = !isAccent && rng.chance(0.65);
 
         foliageBlocks.push({
           x: fx,
           y: fy,
           z: fz,
-          scale: rng.range(0.8, 1.25),
+          scale: rng.range(0.85, 1.2),
           isPrimary,
           isAccent,
         });
       }
     }
 
-    // Split into Primary Leaves, Secondary Leaves, and Accents
     const primaryBlocks = foliageBlocks.filter((b) => b.isPrimary);
     const secondaryBlocks = foliageBlocks.filter((b) => !b.isPrimary && !b.isAccent);
     const accentBlocks = foliageBlocks.filter((b) => b.isAccent);
 
-    // Leaf block geometry (beveled / dodecahedral or box)
     const leafGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
 
     const primaryMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(season.foliage.primary),
-      roughness: 0.6,
+      roughness: 0.55,
       metalness: season.id === 'cyberpunk' ? 0.5 : 0.05,
       emissive:
         season.id === 'cyberpunk'
@@ -234,7 +208,7 @@ export const treeStyle: QRStyleGenerator = {
 
     const secondaryMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(season.foliage.secondary),
-      roughness: 0.65,
+      roughness: 0.6,
       metalness: season.id === 'cyberpunk' ? 0.6 : 0.05,
       emissive:
         season.id === 'cyberpunk'
@@ -244,13 +218,13 @@ export const treeStyle: QRStyleGenerator = {
 
     const accentMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(season.foliage.accent),
-      roughness: 0.4,
-      metalness: season.id === 'cyberpunk' ? 0.8 : 0.2,
+      roughness: 0.35,
+      metalness: season.id === 'cyberpunk' ? 0.8 : 0.15,
       emissive:
         season.id === 'cyberpunk'
-          ? new THREE.Color(season.foliage.accent).multiplyScalar(0.6)
+          ? new THREE.Color(season.foliage.accent).multiplyScalar(0.5)
           : season.id === 'spring'
-          ? new THREE.Color('#ffe5ec').multiplyScalar(0.15)
+          ? new THREE.Color('#ffe5ec').multiplyScalar(0.12)
           : new THREE.Color(0x000000),
     });
 
@@ -258,89 +232,76 @@ export const treeStyle: QRStyleGenerator = {
 
     // Primary Leaves InstancedMesh
     if (primaryBlocks.length > 0) {
-      const primMesh = new THREE.InstancedMesh(
+      const primaryMesh = new THREE.InstancedMesh(
         leafGeo,
         primaryMat,
         primaryBlocks.length
       );
-      primMesh.castShadow = true;
-      primMesh.receiveShadow = true;
+      primaryMesh.castShadow = true;
+      primaryMesh.receiveShadow = false;
 
-      primaryBlocks.forEach((b, idx) => {
+      for (let i = 0; i < primaryBlocks.length; i++) {
+        const b = primaryBlocks[i];
         dummy.position.set(b.x, b.y, b.z);
-        dummy.rotation.set(
-          rng.range(-0.15, 0.15),
-          rng.range(0, Math.PI * 2),
-          rng.range(-0.15, 0.15)
-        );
+        dummy.rotation.set(0, (i * 0.4) % Math.PI, 0);
         dummy.scale.set(b.scale, b.scale, b.scale);
         dummy.updateMatrix();
-        primMesh.setMatrixAt(idx, dummy.matrix);
-      });
-      primMesh.instanceMatrix.needsUpdate = true;
-      rootGroup.add(primMesh);
+        primaryMesh.setMatrixAt(i, dummy.matrix);
+      }
+      primaryMesh.instanceMatrix.needsUpdate = true;
+      decorGroup.add(primaryMesh);
     }
 
     // Secondary Leaves InstancedMesh
     if (secondaryBlocks.length > 0) {
-      const secMesh = new THREE.InstancedMesh(
+      const secondaryMesh = new THREE.InstancedMesh(
         leafGeo,
         secondaryMat,
         secondaryBlocks.length
       );
-      secMesh.castShadow = true;
-      secMesh.receiveShadow = true;
+      secondaryMesh.castShadow = true;
+      secondaryMesh.receiveShadow = false;
 
-      secondaryBlocks.forEach((b, idx) => {
+      for (let i = 0; i < secondaryBlocks.length; i++) {
+        const b = secondaryBlocks[i];
         dummy.position.set(b.x, b.y, b.z);
-        dummy.rotation.set(
-          rng.range(-0.15, 0.15),
-          rng.range(0, Math.PI * 2),
-          rng.range(-0.15, 0.15)
-        );
+        dummy.rotation.set((i * 0.3) % Math.PI, 0, (i * 0.2) % Math.PI);
         dummy.scale.set(b.scale, b.scale, b.scale);
         dummy.updateMatrix();
-        secMesh.setMatrixAt(idx, dummy.matrix);
-      });
-      secMesh.instanceMatrix.needsUpdate = true;
-      rootGroup.add(secMesh);
+        secondaryMesh.setMatrixAt(i, dummy.matrix);
+      }
+      secondaryMesh.instanceMatrix.needsUpdate = true;
+      decorGroup.add(secondaryMesh);
     }
 
-    // Accents InstancedMesh (Flower blossoms, fruits, snow caps, cyber nodes)
+    // Accent Leaves / Fruit / Blossoms InstancedMesh
     if (accentBlocks.length > 0) {
       const accentGeo =
-        season.id === 'summer'
+        season.id === 'spring' || season.id === 'summer'
           ? new THREE.SphereGeometry(blockSize * 0.45, 6, 6)
-          : new THREE.BoxGeometry(
-              blockSize * 0.75,
-              blockSize * 0.75,
-              blockSize * 0.75
-            );
+          : leafGeo;
 
-      const accMesh = new THREE.InstancedMesh(
+      const accentMesh = new THREE.InstancedMesh(
         accentGeo,
         accentMat,
         accentBlocks.length
       );
-      accMesh.castShadow = true;
-      accMesh.receiveShadow = true;
+      accentMesh.castShadow = true;
+      accentMesh.receiveShadow = false;
 
-      accentBlocks.forEach((b, idx) => {
-        // Place accents slightly protruding on top/outer surface
-        dummy.position.set(b.x, b.y + (season.id === 'winter' ? 0.35 : 0), b.z);
-        dummy.rotation.set(
-          rng.range(-0.2, 0.2),
-          rng.range(0, Math.PI * 2),
-          rng.range(-0.2, 0.2)
-        );
-        dummy.scale.set(b.scale * 0.9, b.scale * 0.9, b.scale * 0.9);
+      for (let i = 0; i < accentBlocks.length; i++) {
+        const b = accentBlocks[i];
+        dummy.position.set(b.x, b.y, b.z);
+        dummy.rotation.set(0, (i * 0.5) % Math.PI, 0);
+        dummy.scale.set(b.scale * 1.1, b.scale * 1.1, b.scale * 1.1);
         dummy.updateMatrix();
-        accMesh.setMatrixAt(idx, dummy.matrix);
-      });
-      accMesh.instanceMatrix.needsUpdate = true;
-      rootGroup.add(accMesh);
+        accentMesh.setMatrixAt(i, dummy.matrix);
+      }
+      accentMesh.instanceMatrix.needsUpdate = true;
+      decorGroup.add(accentMesh);
     }
 
+    rootGroup.add(decorGroup);
     return rootGroup;
   },
 };
