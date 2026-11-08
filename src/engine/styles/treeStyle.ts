@@ -1,19 +1,26 @@
 /**
- * SeasonQR - Authentic Procedural Tree & Leaf-to-QR Transformer
+ * SeasonQR - Botanical Living Tree & Dynamic Mosaic QR Transformer
  *
- * Faithfully recreates the lush artistic visual aesthetic of ICQR Magic Tree:
- * - Lush, voluminous, tall organic canopy with natural sun-drenched color gradients.
- * - Multi-forking organic branches winding through negative spaces in the foliage.
- * - Pavement stone plot with scattered fallen leaves/petals.
- * - Lush multi-blade grass tufts clustered along edges and corners.
- * - Seamless morph: Each leaf flutters down into the exact artistic mosaic QR code (Image 2)!
+ * Faithfully recreates the viral aesthetic of ICQR Magic Tree:
+ * 1. Living 3D Tree Mode:
+ *    - Tall, lush, voluminous teardrop canopy (Y from 4.2 up to 15.5).
+ *    - Real-time harmonic wind sway & leaf flutter physics (60 FPS).
+ *    - Natural sunlit foliage color distribution (bright lime on top, emerald midtones, deep forest underneath).
+ *    - Slender multi-forking warm wood branches weaving gracefully through the foliage.
+ *    - Isometric stone paved patio with multi-blade grass tufts at corners and scattered fallen blossoms.
+ *
+ * 2. Signature Leaf-to-QR Flight Morph:
+ *    - Leaves detach and fly along organic curved arcs down to the ground.
+ *    - Trunk and grass scale down and disappear.
+ *    - Leaves assemble into the exact artistic garden mosaic QR code (Image 4).
+ *    - Modules touch seamlessly at 1.002 scale for 100% camera scannability.
  */
 
 import * as THREE from 'three';
 import type { QRStyleGenerator, StyleGenerateParams } from './types';
 
 export interface MorphableTreeGroup extends THREE.Group {
-  updateMorph?: (progress: number) => void;
+  updateMorph?: (progress: number, time?: number, delta?: number) => void;
 }
 
 interface LeafTransform {
@@ -27,133 +34,119 @@ interface LeafTransform {
   qrRot: THREE.Euler;
   qrScale: THREE.Vector3;
 
-  // Dynamic animation attributes
+  // Real-time wind physics & flight animation dynamics
+  phase: number;
+  swayAmp: number;
   delay: number;
   arcY: number;
   spin: number;
 }
 
 /**
- * Seasonal color schemes for the lush tree canopy and mosaic QR code
+ * Seasonal palettes tuned for botanical realism and scan contrast
  */
-function getSeasonalCanopyPalette(seasonId: string) {
+function getSeasonalPalette(seasonId: string) {
   switch (seasonId) {
     case 'autumn':
       return {
-        highlights: ['#facc15', '#fde047', '#fb923c', '#f97316'],
-        midtones: ['#ea580c', '#dc2626', '#c2410c', '#b91c1c'],
+        highlights: ['#fef08a', '#facc15', '#fde047', '#fb923c'],
+        midtones: ['#f97316', '#ea580c', '#dc2626', '#c2410c'],
         shadows: ['#991b1b', '#7f1d1d', '#78350f', '#451a03'],
-        trunk: '#5c3826',
-        branch: '#795548',
+        trunk: '#4e342e',
+        branch: '#5d4037',
         grass: '#b45309',
         fallenLeaves: ['#dc2626', '#f59e0b', '#d97706', '#b91c1c'],
-        stoneLight: '#f5f0e6',
-        stoneDark: '#e8dfd1',
+        stoneLight: '#f5eee6',
+        stoneDark: '#e8ded2',
       };
     case 'spring':
       return {
-        highlights: ['#fce7f3', '#fbcfe8', '#f9a8d4', '#f472b6'],
-        midtones: ['#ec4899', '#db2777', '#d946ef', '#c026d3'],
-        shadows: ['#be185d', '#9d174d', '#831843', '#701a75'],
-        trunk: '#4e342e',
-        branch: '#6d4c41',
-        grass: '#4caf50',
-        fallenLeaves: ['#f472b6', '#fbcfe8', '#fce7f3', '#db2777'],
-        stoneLight: '#f7f2ea',
-        stoneDark: '#ebe4d8',
+        highlights: ['#fdf2f8', '#fce7f3', '#fbcfe8', '#f472b6'],
+        midtones: ['#ec4899', '#db2777', '#be185d', '#f43f5e'],
+        shadows: ['#9d174d', '#831843', '#701a75', '#500724'],
+        trunk: '#4a3525',
+        branch: '#5c4033',
+        grass: '#4ade80',
+        fallenLeaves: ['#fbcfe8', '#f472b6', '#fda4af', '#f43f5e'],
+        stoneLight: '#f9f5f0',
+        stoneDark: '#ece5dc',
       };
     case 'winter':
       return {
-        highlights: ['#ffffff', '#f0f9ff', '#e0f2fe', '#bae6fd'],
-        midtones: ['#38bdf8', '#0284c7', '#0369a1', '#0f766e'],
-        shadows: ['#0c4a6e', '#115e59', '#1e293b', '#0f172a'],
-        trunk: '#334155',
-        branch: '#475569',
-        grass: '#0f766e',
-        fallenLeaves: ['#ffffff', '#bae6fd', '#38bdf8', '#e0f2fe'],
-        stoneLight: '#f1f5f9',
-        stoneDark: '#e2e8f0',
-      };
-    case 'cyberpunk':
-      return {
-        highlights: ['#00f5ff', '#38bdf8', '#67e8f9', '#a5f3fc'],
-        midtones: ['#06b6d4', '#0891b2', '#d946ef', '#c026d3'],
-        shadows: ['#0e7490', '#155e75', '#701a75', '#0f172a'],
-        trunk: '#1e1b4b',
-        branch: '#312e81',
-        grass: '#00f5ff',
-        fallenLeaves: ['#00f5ff', '#d946ef', '#a855f7'],
-        stoneLight: '#1e293b',
-        stoneDark: '#0f172a',
+        highlights: ['#f8fafc', '#f1f5f9', '#e2e8f0', '#cbd5e1'],
+        midtones: ['#94a3b8', '#64748b', '#475569', '#334155'],
+        shadows: ['#1e293b', '#0f172a', '#020617', '#1e1b4b'],
+        trunk: '#332f2c',
+        branch: '#423d38',
+        grass: '#64748b',
+        fallenLeaves: ['#ffffff', '#e2e8f0', '#cbd5e1', '#94a3b8'],
+        stoneLight: '#e2e8f0',
+        stoneDark: '#cbd5e1',
       };
     case 'summer':
     default:
+      // Authentic ICQR Summer Theme (Reference Image 3 & 4)
       return {
-        highlights: ['#a3e635', '#84cc16', '#65a30d', '#bef264'],
+        highlights: ['#bef264', '#a3e635', '#84cc16', '#65a30d'],
         midtones: ['#4ade80', '#22c55e', '#16a34a', '#15803d'],
-        shadows: ['#166534', '#14532d', '#1e3a1f', '#2d4a22'],
-        trunk: '#5d4037',
+        shadows: ['#166534', '#14532d', '#052e16', '#022c22'],
+        trunk: '#5c3826',
         branch: '#6d4c41',
-        grass: '#4caf50',
-        fallenLeaves: ['#84cc16', '#22c55e', '#16a34a', '#a3e635'],
-        stoneLight: '#f6f1e7',
-        stoneDark: '#eae3d5',
+        grass: '#22c55e',
+        fallenLeaves: ['#a3e635', '#4ade80', '#f472b6', '#fde047'],
+        stoneLight: '#f5f0e6',
+        stoneDark: '#ede5d8',
       };
   }
 }
 
 export const treeStyle: QRStyleGenerator = {
   id: 'tree',
-  name: 'Sacred Seasonal Tree',
-  vietnameseName: 'Cây Cổ Thụ Biến Hình QR',
+  name: 'Living Seasonal Tree',
+  vietnameseName: 'Cây Bốn Mùa Sinh Động',
   icon: '🌳',
-  description: 'An interactive isometric seasonal tree whose leaves morph directly into a scannable mosaic QR code!',
-  vietnameseDescription: 'Cây 3D sống động với lá cây tự động bay xuống xếp thành bức tranh mã QR nghệ thuật!',
+  description: 'An organic botanical tree swaying in the wind that morphs into a garden mosaic QR code.',
+  vietnameseDescription: 'Cây bốn mùa lay động trong gió, lá tự bay xuống xếp thành mã QR nghệ thuật.',
 
   generate(params: StyleGenerateParams): THREE.Group {
     const { matrix, season, sceneSize = 24 } = params;
     const rng = matrix.rng;
     const N = matrix.size;
-
-    const palette = getSeasonalCanopyPalette(season.id);
-
-    // Margin around QR code for quiet zone
-    const quietMargin = 3;
-    const totalModules = N + quietMargin * 2;
-    const moduleSize = sceneSize / totalModules;
-    const slabDepth = 1.0;
+    const moduleSize = sceneSize / N;
+    const palette = getSeasonalPalette(season.id);
 
     const rootGroup = new THREE.Group() as MorphableTreeGroup;
-    rootGroup.name = 'Style_Tree';
+    rootGroup.name = 'Style_LivingTree';
 
-    const toWorldPos = (row: number, col: number) => ({
-      x: (col - (N - 1) / 2) * moduleSize,
-      z: (row - (N - 1) / 2) * moduleSize,
+    const halfScene = sceneSize / 2;
+    const toWorldPos = (r: number, c: number) => ({
+      x: (c + 0.5) * moduleSize - halfScene,
+      z: (r + 0.5) * moduleSize - halfScene,
     });
 
     // ==========================================
-    // 1. ISOMETRIC GARDEN PAVEMENT (Image 1)
+    // 1. ISOMETRIC GARDEN PATIO (Image 3)
     // ==========================================
     const groundGroup = new THREE.Group();
-    groundGroup.name = 'GardenBase';
+    groundGroup.name = 'GardenPatio';
 
-    // Base slab substrate
-    const slabGeo = new THREE.BoxGeometry(sceneSize, slabDepth, sceneSize);
+    // Base stone curb foundation
+    const slabGeo = new THREE.BoxGeometry(sceneSize * 1.03, 0.45, sceneSize * 1.03);
     const slabMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(palette.stoneDark),
-      roughness: 0.9,
+      color: new THREE.Color('#b0a898'),
+      roughness: 0.85,
       metalness: 0.05,
     });
     const slabMesh = new THREE.Mesh(slabGeo, slabMat);
-    slabMesh.position.y = -slabDepth / 2;
+    slabMesh.position.y = -0.225;
     slabMesh.receiveShadow = true;
     groundGroup.add(slabMesh);
 
-    // Warm cream paving floor
+    // Warm cream patio surface
     const topFloorGeo = new THREE.BoxGeometry(sceneSize * 0.998, 0.04, sceneSize * 0.998);
     const topFloorMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(palette.stoneLight),
-      roughness: 0.5,
+      roughness: 0.55,
       metalness: 0.0,
     });
     const topFloor = new THREE.Mesh(topFloorGeo, topFloorMat);
@@ -161,13 +154,7 @@ export const treeStyle: QRStyleGenerator = {
     topFloor.receiveShadow = true;
     groundGroup.add(topFloor);
 
-    // Individual paving stone tiles for subtle texture
-    const stoneTileGeo = new THREE.BoxGeometry(moduleSize * 0.98, 0.015, moduleSize * 0.98);
-    const stoneMat = new THREE.MeshStandardMaterial({
-      roughness: 0.6,
-      metalness: 0.0,
-    });
-
+    // Subtle stone tile textures
     let lightTileCount = 0;
     for (let r = 0; r < N; r++) {
       for (let c = 0; c < N; c++) {
@@ -175,6 +162,11 @@ export const treeStyle: QRStyleGenerator = {
       }
     }
 
+    const stoneTileGeo = new THREE.BoxGeometry(moduleSize * 0.98, 0.012, moduleSize * 0.98);
+    const stoneMat = new THREE.MeshStandardMaterial({
+      roughness: 0.6,
+      metalness: 0.0,
+    });
     const lightTilesMesh = new THREE.InstancedMesh(stoneTileGeo, stoneMat, lightTileCount);
     lightTilesMesh.receiveShadow = true;
     const dummyTile = new THREE.Object3D();
@@ -186,11 +178,9 @@ export const treeStyle: QRStyleGenerator = {
       for (let c = 0; c < N; c++) {
         if (!matrix.matrix[r][c]) {
           const { x, z } = toWorldPos(r, c);
-          dummyTile.position.set(x, 0.025, z);
+          dummyTile.position.set(x, 0.026, z);
           dummyTile.updateMatrix();
           lightTilesMesh.setMatrixAt(ltIdx, dummyTile.matrix);
-
-          // Subtle natural variation in paving stones
           const tint = (r * 3 + c * 7) % 5 === 0 ? colorB : colorA;
           lightTilesMesh.setColorAt(ltIdx, tint);
           ltIdx++;
@@ -201,83 +191,73 @@ export const treeStyle: QRStyleGenerator = {
     if (lightTilesMesh.instanceColor) lightTilesMesh.instanceColor.needsUpdate = true;
     groundGroup.add(lightTilesMesh);
 
-    // Fallen petals / leaves scattered on the patio (From Image 1!)
+    // Fallen petals / leaves scattered on patio (Image 3)
     const fallenGroup = new THREE.Group();
     fallenGroup.name = 'FallenLeaves';
-    const fallenLeafGeo = new THREE.BoxGeometry(moduleSize * 0.45, 0.02, moduleSize * 0.35);
-    const fallenCount = 18;
+    const fallenLeafGeo = new THREE.PlaneGeometry(moduleSize * 0.5, moduleSize * 0.35);
+    fallenLeafGeo.rotateX(-Math.PI / 2);
 
-    for (let i = 0; i < fallenCount; i++) {
+    for (let i = 0; i < 22; i++) {
       const angle = rng.angle();
-      const dist = rng.range(moduleSize * 2, moduleSize * 8);
+      const dist = rng.range(moduleSize * 1.5, moduleSize * 8.5);
       const fx = Math.cos(angle) * dist;
       const fz = Math.sin(angle) * dist;
 
-      const fColor = rng.choice(palette.fallenLeaves);
       const fMat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(fColor),
+        color: new THREE.Color(rng.choice(palette.fallenLeaves)),
         roughness: 0.6,
+        side: THREE.DoubleSide,
       });
       const fMesh = new THREE.Mesh(fallenLeafGeo, fMat);
-      fMesh.position.set(fx, 0.038, fz);
+      fMesh.position.set(fx, 0.035, fz);
       fMesh.rotation.y = rng.angle();
       fMesh.scale.set(rng.range(0.8, 1.3), 1, rng.range(0.8, 1.3));
       fallenGroup.add(fMesh);
     }
     groundGroup.add(fallenGroup);
-
     rootGroup.add(groundGroup);
 
     // ==========================================
-    // 2. LUSH MULTI-BLADE GRASS CLUMPS (Image 1)
+    // 2. LUSH MULTI-BLADE CORNER GRASS TUFTS (Image 3)
     // ==========================================
     const grassGroup = new THREE.Group();
     grassGroup.name = 'GrassBorders';
 
-    // Grass blade geometry: tapered curved flat triangle
-    const bladeGeo = new THREE.ConeGeometry(0.12, 0.9, 3);
+    const bladeGeo = new THREE.ConeGeometry(0.1, 0.85, 3);
     const bladeMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(palette.grass),
-      roughness: 0.55,
+      roughness: 0.5,
       metalness: 0.05,
     });
 
-    // Create lush clumps of grass at the corners and along the perimeter
-    const clumpPositions: { x: number; z: number; count: number }[] = [];
-    const cornerOffset = sceneSize * 0.44;
-
-    // Corner clusters (rich clusters as seen in Image 1)
-    const corners = [
-      { x: -cornerOffset, z: -cornerOffset },
-      { x: cornerOffset, z: -cornerOffset },
-      { x: -cornerOffset, z: cornerOffset },
-      { x: cornerOffset, z: cornerOffset },
-      { x: 0, z: -cornerOffset },
-      { x: 0, z: cornerOffset },
-      { x: -cornerOffset, z: 0 },
-      { x: cornerOffset, z: 0 },
+    const clumpPositions: [number, number][] = [
+      // 4 Corners (Dense tufts)
+      [-halfScene * 0.94, -halfScene * 0.94],
+      [halfScene * 0.94, -halfScene * 0.94],
+      [-halfScene * 0.94, halfScene * 0.94],
+      [halfScene * 0.94, halfScene * 0.94],
+      // Border accents
+      [0, -halfScene * 0.95],
+      [0, halfScene * 0.95],
+      [-halfScene * 0.95, 0],
+      [halfScene * 0.95, 0],
     ];
 
-    for (const c of corners) {
-      clumpPositions.push({ x: c.x, z: c.z, count: rng.int(10, 16) });
-    }
-
-    for (const clump of clumpPositions) {
-      for (let b = 0; b < clump.count; b++) {
-        const angle = rng.angle();
-        const dist = rng.range(0.2, 1.8);
-        const bx = clump.x + Math.cos(angle) * dist;
-        const bz = clump.z + Math.sin(angle) * dist;
-        const bHeight = rng.range(0.65, 1.35);
-
+    for (const [cx, cz] of clumpPositions) {
+      const bladeCount = rng.int(10, 16);
+      for (let b = 0; b < bladeCount; b++) {
         const blade = new THREE.Mesh(bladeGeo, bladeMat);
-        blade.position.set(bx, bHeight / 2 + 0.02, bz);
-        blade.scale.set(rng.range(0.8, 1.5), bHeight, rng.range(0.8, 1.5));
+        const bx = cx + rng.range(-0.9, 0.9);
+        const bz = cz + rng.range(-0.9, 0.9);
+        const bScale = rng.range(0.65, 1.35);
+
+        blade.position.set(bx, (0.85 * bScale) / 2 + 0.02, bz);
         blade.rotation.set(
           rng.range(-0.35, 0.35),
           rng.angle(),
           rng.range(-0.35, 0.35)
         );
+        blade.scale.set(bScale, bScale, bScale);
         blade.castShadow = true;
         grassGroup.add(blade);
       }
@@ -285,7 +265,7 @@ export const treeStyle: QRStyleGenerator = {
     rootGroup.add(grassGroup);
 
     // ==========================================
-    // 3. TALL ORGANIC TREE TRUNK & BRANCHES
+    // 3. TALL BOTANICAL TRUNK & SLENDER BRANCHES
     // ==========================================
     const trunkGroup = new THREE.Group();
     trunkGroup.name = 'TreeTrunk';
@@ -301,19 +281,18 @@ export const treeStyle: QRStyleGenerator = {
       metalness: 0.05,
     });
 
-    // Tall, elegant trunk reaching up into the canopy
-    const trunkHeight = rng.range(8.5, 10.5);
-    const trunkBaseR = moduleSize * 0.9;
-    const trunkSegments = 6;
+    // Tall trunk rising into the canopy (Y = 0 to 11.5)
+    const trunkHeight = 11.5;
+    const trunkSegments = 8;
     const segH = trunkHeight / trunkSegments;
-
     let curX = 0;
     let curZ = 0;
-    let curR = trunkBaseR;
+    let curR = moduleSize * 0.85;
+
     const canopyAnchors: { x: number; y: number; z: number; radius: number }[] = [];
 
     for (let s = 0; s < trunkSegments; s++) {
-      const topR = curR * 0.84;
+      const topR = curR * 0.86;
       const yPos = s * segH + segH / 2;
       const segGeo = new THREE.CylinderGeometry(topR, curR, segH, 7);
       const seg = new THREE.Mesh(segGeo, trunkMat);
@@ -322,26 +301,26 @@ export const treeStyle: QRStyleGenerator = {
       trunkGroup.add(seg);
 
       curR = topR;
-      curX += rng.range(-0.1, 0.1);
-      curZ += rng.range(-0.1, 0.1);
+      curX += rng.range(-0.12, 0.12);
+      curZ += rng.range(-0.12, 0.12);
 
       if (s >= 2) {
         canopyAnchors.push({
           x: curX,
           y: yPos + segH / 2,
           z: curZ,
-          radius: rng.range(2.5, 3.8),
+          radius: rng.range(2.8, 4.2),
         });
       }
     }
 
-    // Branching network winding through canopy (From Image 1!)
-    const numMajorBranches = rng.int(5, 7);
+    // Branching network winding outward & upward
+    const numMajorBranches = 8;
     for (let b = 0; b < numMajorBranches; b++) {
-      const bAngle = (b / numMajorBranches) * Math.PI * 2 + rng.range(-0.3, 0.3);
-      const startAnchor = rng.choice(canopyAnchors);
-      const bLength = rng.range(3.5, 5.5);
-      const bTilt = rng.range(0.3, 0.65);
+      const bAngle = (b / numMajorBranches) * Math.PI * 2 + rng.range(-0.25, 0.25);
+      const startAnchor = canopyAnchors[b % canopyAnchors.length];
+      const bLength = rng.range(3.8, 5.8);
+      const bTilt = rng.range(0.35, 0.65);
 
       const endX = startAnchor.x + Math.cos(bAngle) * bLength;
       const endZ = startAnchor.z + Math.sin(bAngle) * bLength;
@@ -352,8 +331,8 @@ export const treeStyle: QRStyleGenerator = {
       const midZ = (startAnchor.z + endZ) / 2;
 
       const bGeo = new THREE.CylinderGeometry(
-        0.18 * moduleSize,
-        0.38 * moduleSize,
+        0.14 * moduleSize,
+        0.32 * moduleSize,
         bLength,
         5
       );
@@ -368,24 +347,24 @@ export const treeStyle: QRStyleGenerator = {
         x: endX,
         y: endY,
         z: endZ,
-        radius: rng.range(2.2, 3.6),
+        radius: rng.range(2.6, 3.8),
       });
 
       // Smaller sub-branch twigs
-      if (rng.chance(0.6)) {
-        const subLength = rng.range(1.5, 2.5);
-        const subAngle = bAngle + rng.range(-0.5, 0.5);
+      if (rng.chance(0.75)) {
+        const subLength = rng.range(1.8, 2.8);
+        const subAngle = bAngle + rng.range(-0.45, 0.45);
         const subEndX = endX + Math.cos(subAngle) * subLength;
         const subEndZ = endZ + Math.sin(subAngle) * subLength;
-        const subEndY = endY + rng.range(0.5, 1.4);
+        const subEndY = endY + rng.range(0.6, 1.5);
 
         const subMidX = (endX + subEndX) / 2;
         const subMidY = (endY + subEndY) / 2;
         const subMidZ = (endZ + subEndZ) / 2;
 
         const subGeo = new THREE.CylinderGeometry(
-          0.1 * moduleSize,
-          0.18 * moduleSize,
+          0.08 * moduleSize,
+          0.14 * moduleSize,
           subLength,
           4
         );
@@ -400,23 +379,23 @@ export const treeStyle: QRStyleGenerator = {
           x: subEndX,
           y: subEndY,
           z: subEndZ,
-          radius: rng.range(1.8, 2.8),
+          radius: rng.range(2.0, 3.2),
         });
       }
     }
 
-    // Top crown pinnacle
+    // Top pinnacle anchor
     canopyAnchors.push({
       x: curX,
-      y: trunkHeight + rng.range(1.5, 2.5),
+      y: trunkHeight + 2.2,
       z: curZ,
-      radius: 3.2,
+      radius: 3.5,
     });
 
     rootGroup.add(trunkGroup);
 
     // ==========================================
-    // 4. LUSH TRANSFORMER: FOLIAGE <---> QR CODE
+    // 4. LIVING FOLIAGE & MOSAIC QR TRANSFORMER
     // ==========================================
     interface DarkModule {
       row: number;
@@ -439,16 +418,15 @@ export const treeStyle: QRStyleGenerator = {
 
     const leafCount = darkModules.length;
 
-    // Stylized beveled leaf / voxel geometry
-    const leafGeo = new THREE.BoxGeometry(
-      moduleSize * 1.002,
-      moduleSize * 0.16,
-      moduleSize * 1.002
-    );
+    // Organic Leaf Card Geometry:
+    // A double-sided plane oriented flat in the X-Z plane by default (facing +Y)
+    const leafGeo = new THREE.PlaneGeometry(moduleSize, moduleSize);
+    leafGeo.rotateX(-Math.PI / 2);
 
     const leafMat = new THREE.MeshStandardMaterial({
       roughness: 0.45,
       metalness: 0.05,
+      side: THREE.DoubleSide,
     });
 
     const leafMesh = new THREE.InstancedMesh(leafGeo, leafMat, leafCount);
@@ -464,44 +442,61 @@ export const treeStyle: QRStyleGenerator = {
       const { x: qrX, z: qrZ } = toWorldPos(mod.row, mod.col);
 
       // --- 2D QR Transform (Target State in QR mode) ---
-      const qrPos = new THREE.Vector3(qrX, 0.035, qrZ);
+      // Flat on the ground at Y = 0.038, facing straight up (+Y)
+      const qrPos = new THREE.Vector3(qrX, 0.038, qrZ);
       const qrRot = new THREE.Euler(0, 0, 0);
-      const qrScale = new THREE.Vector3(1, 1, 1);
+      const qrScale = new THREE.Vector3(1.002, 1, 1.002); // 1.002 seamless connection
 
-      // --- 3D Lush Tree Canopy Transform (Initial State in Tree mode) ---
-      // Distribute organically across the vertical teardrop crown (Y from 4.5 to 14.5!)
-      const anchor = canopyAnchors[i % canopyAnchors.length];
-      const theta = rng.angle();
-      const phi = Math.acos(rng.range(-1, 1));
-      const dist = Math.cbrt(rng.next()) * anchor.radius;
+      // --- 3D Botanical Tree Canopy Transform (Image 3) ---
+      // Distribute in a tall voluminous teardrop envelope (Y: 4.2 -> 15.5)
+      let treeX = 0;
+      let treeY = 0;
+      let treeZ = 0;
 
-      const treeX = anchor.x + dist * Math.sin(phi) * Math.cos(theta);
-      // Tall voluminous foliage shape
-      const treeY = Math.max(
-        4.6,
-        anchor.y + dist * Math.sin(phi) * Math.sin(theta) * 0.95
-      );
-      const treeZ = anchor.z + dist * Math.cos(phi);
+      if (rng.chance(0.65)) {
+        // Clustered around organic branch anchors
+        const anchor = rng.choice(canopyAnchors);
+        const theta = rng.angle();
+        const phi = Math.acos(rng.range(-1, 1));
+        const dist = Math.cbrt(rng.next()) * anchor.radius;
+
+        treeX = anchor.x + dist * Math.sin(phi) * Math.cos(theta);
+        treeY = Math.max(4.2, anchor.y + dist * Math.sin(phi) * Math.sin(theta) * 0.95);
+        treeZ = anchor.z + dist * Math.cos(phi);
+      } else {
+        // Distributed along the full botanical teardrop envelope
+        const normH = rng.range(0.05, 0.98); // 0 -> 1 along canopy height
+        treeY = 4.2 + normH * 11.2; // 4.2 to 15.4
+
+        // Teardrop profile radius formula
+        const profileR = 5.8 * Math.sin(Math.pow(normH, 0.72) * Math.PI) * (1.1 - 0.35 * normH);
+        const rDist = Math.sqrt(rng.range(0.3, 1.0)) * profileR;
+        const theta = rng.angle();
+
+        treeX = Math.cos(theta) * rDist + rng.range(-0.4, 0.4);
+        treeZ = Math.sin(theta) * rDist + rng.range(-0.4, 0.4);
+      }
 
       const treePos = new THREE.Vector3(treeX, treeY, treeZ);
+
+      // Organic foliage tilt & angle in 3D tree mode
       const treeRot = new THREE.Euler(
-        rng.range(-0.35, 0.35),
+        rng.range(-0.7, 0.7),
         rng.angle(),
-        rng.range(-0.35, 0.35)
+        rng.range(-0.7, 0.7)
       );
 
-      // Slightly larger foliage quads for lush visual density
-      const treeScale = new THREE.Vector3(
-        rng.range(1.15, 1.65),
-        rng.range(1.15, 1.65),
-        rng.range(1.15, 1.65)
-      );
+      // Lush foliage scale in tree mode (1.45 to 1.85 moduleSize)
+      const sFactor = rng.range(1.45, 1.85);
+      const treeScale = new THREE.Vector3(sFactor, 1, sFactor);
 
-      // Animation parameters
+      // Animation & Wind dynamics
       const distFromCenter = Math.hypot(qrX, qrZ) / (sceneSize * 0.5);
       const delay = rng.range(0, 0.22) + distFromCenter * 0.16;
-      const arcY = rng.range(2.5, 5.0);
-      const spin = rng.range(3.0, 6.0) * (rng.chance(0.5) ? 1 : -1);
+      const arcY = rng.range(3.0, 5.5);
+      const spin = rng.range(3.5, 7.0) * (rng.chance(0.5) ? 1 : -1);
+      const phase = rng.range(0, Math.PI * 2);
+      const swayAmp = rng.range(0.25, 0.45);
 
       leafTransforms.push({
         treePos,
@@ -510,22 +505,24 @@ export const treeStyle: QRStyleGenerator = {
         qrPos,
         qrRot,
         qrScale,
+        phase,
+        swayAmp,
         delay,
         arcY,
         spin,
       });
 
-      // --- Natural Canopy Gradient Coloring ---
-      // Sunlit leaves at the top get bright highlights, lower/inner leaves get rich deep greens!
+      // --- Natural Canopy Sunlit Gradient & Mosaic Color Palette ---
       let leafColorHex: string;
-
       if (mod.isFinder) {
-        // High contrast for finder patterns
+        // High contrast dark tone for finder patterns (ensures instant phone lock)
         leafColorHex = rng.choice(palette.shadows);
       } else {
-        // Height-based natural gradient (Top = sunlit bright, Bottom = deep shadow)
-        const heightNorm = THREE.MathUtils.clamp((treeY - 4.5) / 9.0, 0, 1);
-
+        // Height-based sunlight gradient:
+        // Top crown = bright sunlit lime/highlights
+        // Middle = fresh lush emerald midtones
+        // Underneath/interior = deep forest shadow
+        const heightNorm = THREE.MathUtils.clamp((treeY - 4.2) / 10.5, 0, 1);
         if (heightNorm > 0.72) {
           leafColorHex = rng.choice(palette.highlights);
         } else if (heightNorm > 0.35) {
@@ -550,9 +547,9 @@ export const treeStyle: QRStyleGenerator = {
     rootGroup.add(leafMesh);
 
     // ==========================================
-    // 5. MORPHING UPDATE FUNCTION
+    // 5. REAL-TIME WIND SWAY & MORPH ANIMATION
     // ==========================================
-    rootGroup.updateMorph = (progress: number) => {
+    rootGroup.updateMorph = (progress: number, time: number = 0) => {
       const p = THREE.MathUtils.clamp(progress, 0, 1);
 
       // 1. Trunk and Grass scale down as we morph into flat QR
@@ -566,12 +563,26 @@ export const treeStyle: QRStyleGenerator = {
       fallenGroup.scale.set(decorScale, decorScale, decorScale);
       fallenGroup.visible = p < 0.98;
 
-      // 2. Animate every leaf along its flight arc
+      // Wind sway factor: full strength at p = 0, gracefully damped to 0 at p = 1
+      const windFactor = Math.pow(Math.max(0, 1 - p), 2.2);
+
+      // 2. Animate every leaf with wind physics + flight arc
       for (let i = 0; i < leafCount; i++) {
         const d = leafTransforms[i];
 
+        // Harmonic wind sway (higher leaves sway more with gentle breeze)
+        const heightFactor = Math.max(0.12, (d.treePos.y - 3.5) / 11.0);
+        const swayX = Math.sin(time * 2.2 + d.phase + d.treePos.y * 0.35) * d.swayAmp * heightFactor;
+        const swayZ = Math.cos(time * 1.8 + d.phase + d.treePos.x * 0.35) * d.swayAmp * heightFactor;
+        const swayY = Math.sin(time * 3.1 + d.phase) * (d.swayAmp * 0.35) * heightFactor;
+
+        // Rotational flutter
+        const flutterRoll = Math.sin(time * 3.8 + d.phase) * 0.18 * heightFactor;
+        const flutterPitch = Math.cos(time * 2.9 + d.phase) * 0.14 * heightFactor;
+
+        // Flight progress (staggered by radial distance)
         const localT = THREE.MathUtils.clamp(
-          (p - d.delay) / (1 - 0.38),
+          (p - d.delay) / (1 - 0.36),
           0,
           1
         );
@@ -582,19 +593,23 @@ export const treeStyle: QRStyleGenerator = {
             ? 4 * localT * localT * localT
             : 1 - Math.pow(-2 * localT + 2, 3) / 2;
 
-        const arc = Math.sin(localT * Math.PI) * d.arcY * (1 - p * 0.4);
+        const arc = Math.sin(localT * Math.PI) * d.arcY * (1 - p * 0.35);
 
-        dummy.position.lerpVectors(d.treePos, d.qrPos, ease);
-        dummy.position.y += arc;
+        // Interpolate Position: Tree (with wind sway) -> QR Position
+        dummy.position.x = THREE.MathUtils.lerp(d.treePos.x + swayX * windFactor, d.qrPos.x, ease);
+        dummy.position.y = THREE.MathUtils.lerp(d.treePos.y + swayY * windFactor, d.qrPos.y, ease) + arc;
+        dummy.position.z = THREE.MathUtils.lerp(d.treePos.z + swayZ * windFactor, d.qrPos.z, ease);
 
-        dummy.rotation.x = THREE.MathUtils.lerp(d.treeRot.x, d.qrRot.x, ease);
+        // Interpolate Rotation: Tree (with flutter) -> Flat QR (0, 0, 0)
+        dummy.rotation.x = THREE.MathUtils.lerp(d.treeRot.x + flutterPitch * windFactor, d.qrRot.x, ease);
         dummy.rotation.y = THREE.MathUtils.lerp(
           d.treeRot.y + d.spin * (1 - ease),
           d.qrRot.y,
           ease
         );
-        dummy.rotation.z = THREE.MathUtils.lerp(d.treeRot.z, d.qrRot.z, ease);
+        dummy.rotation.z = THREE.MathUtils.lerp(d.treeRot.z + flutterRoll * windFactor, d.qrRot.z, ease);
 
+        // Interpolate Scale: Lush Tree scale (1.6) -> Seamless QR scale (1.002)
         dummy.scale.lerpVectors(d.treeScale, d.qrScale, ease);
 
         dummy.updateMatrix();

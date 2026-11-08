@@ -82,8 +82,8 @@ export class SceneManager {
   private destCamUp = new THREE.Vector3();
 
   // Presets
-  private readonly ISO_POS = new THREE.Vector3(26, 30, 26);
-  private readonly ISO_TARGET = new THREE.Vector3(0, 1.5, 0);
+  private readonly ISO_POS = new THREE.Vector3(24, 22, 24);
+  private readonly ISO_TARGET = new THREE.Vector3(0, 6.0, 0);
   private readonly ISO_UP = new THREE.Vector3(0, 1, 0);
 
   // Height ~36 gives full view of the 24-unit slab with comfortable padding
@@ -284,9 +284,9 @@ export class SceneManager {
     if (!this.styleGroup) return;
 
     // 1. Morphing Leaf-to-QR Transformer (ICQR Magic Mechanic)
-    const morphable = this.styleGroup as { updateMorph?: (p: number) => void } | null;
+    const morphable = this.styleGroup as { updateMorph?: (p: number, time?: number) => void } | null;
     if (morphable && typeof morphable.updateMorph === 'function') {
-      morphable.updateMorph(this.scanModeProgress);
+      morphable.updateMorph(this.scanModeProgress, this.clock.getElapsedTime());
     }
 
     // 2. Generic above-ground decorations for other styles
@@ -519,6 +519,10 @@ export class SceneManager {
       }
     } else {
       this.controls.update();
+      // Keep real-time foliage wind sway alive continuously in 3D mode (60 FPS)
+      if (this.scanModeProgress < 0.99) {
+        this.applyScanModeDecor();
+      }
     }
 
     // 2. Weather particles animation (only animate when visible)
