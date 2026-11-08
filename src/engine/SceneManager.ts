@@ -47,6 +47,7 @@ export class SceneManager {
   private styleGroup: THREE.Group | null = null;
   private particles: WeatherParticleSystem | null = null;
   private ambientLight: THREE.AmbientLight;
+  private hemiLight: THREE.HemisphereLight;
   private sunLight: THREE.DirectionalLight;
   private rimLight: THREE.DirectionalLight;
 
@@ -120,7 +121,7 @@ export class SceneManager {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -141,6 +142,14 @@ export class SceneManager {
       this.currentSeason.lighting.ambientIntensity
     );
     this.scene.add(this.ambientLight);
+
+    // Natural sky & ground bounce for volumetric 3D botanical depth
+    this.hemiLight = new THREE.HemisphereLight(
+      this.currentSeason.lighting.skyColor,
+      this.currentSeason.ground.groundSlab,
+      0.35
+    );
+    this.scene.add(this.hemiLight);
 
     this.sunLight = new THREE.DirectionalLight(
       this.currentSeason.lighting.sunColor,
@@ -262,6 +271,12 @@ export class SceneManager {
 
     this.ambientLight.color.set(lighting.ambientColor);
     this.ambientLight.intensity = lighting.ambientIntensity;
+
+    if (this.hemiLight) {
+      this.hemiLight.color.set(lighting.skyColor);
+      this.hemiLight.groundColor.set(this.currentSeason.ground.groundSlab);
+      this.hemiLight.intensity = 0.35;
+    }
 
     this.sunLight.color.set(lighting.sunColor);
     this.sunLight.intensity = lighting.sunIntensity;

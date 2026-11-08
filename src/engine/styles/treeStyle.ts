@@ -7,7 +7,12 @@
  *    - PBR oak bark with vertical grain and flared root collar.
  *    - Double-billboard oak foliage cards with alpha cutout and realistic leaf silhouettes.
  *    - Built-in real-time vertex wind physics (sways naturally in 60 FPS).
- *    - Seasonal foliage color tinting (Spring Sakura, Summer Oak, Autumn Maple, Winter Frost).
+ *    - Seasonal foliage color textures:
+ *      * Spring: Poetic Sakura Cherry Blossom Pink & Rose
+ *      * Summer: Vibrant Lush Emerald Oak (matching reference photo!)
+ *      * Autumn: Breathtaking Kyoto Red Maple & Warm Amber Gold
+ *      * Winter: Frost Snow White & Icy Blue Pine
+ *      * Cyberpunk: Radiant Neon Cyan & Hot Magenta
  *
  * 2. 3D Voxel Stone Paver Patio:
  *    - 1:1 QR module correspondence with beveled stone paving & perimeter curb.
@@ -62,12 +67,12 @@ const OAK_TREE_PRESET = {
     type: 'oak',
     billboard: 'double',
     angle: 42,
-    count: 22,
-    start: 0.12,
-    size: 3.2,
-    sizeVariance: 0.8,
+    count: 42, // Rich, dense, voluminous foliage matching authentic oak reference
+    start: 0.08,
+    size: 3.4,
+    sizeVariance: 0.75,
     tint: 0xffffff,
-    alphaTest: 0.4,
+    alphaTest: 0.32,
   },
   trellis: {
     enabled: false,
@@ -81,79 +86,79 @@ function getSeasonalPalette(seasonId: string) {
   switch (seasonId) {
     case 'autumn':
       return {
-        leafTint: 0xdc2626, // Crimson maple
-        barkTint: 0x451a03,
+        leafTexture: '/assets/leaves/oak_autumn.png',
+        barkTint: 0x301a12, // Rich dark Kyoto walnut bark
         grassMid: '#b45309',
         grassTip: '#f59e0b',
-        flowerColors: ['#fbbf24', '#f97316', '#ef4444'],
+        flowerColors: ['#fde047', '#fb923c', '#dc2626'],
         fallenLeaves: ['#dc2626', '#f59e0b', '#d97706', '#b91c1c'],
-        stoneLight: '#f5efe6',
-        stoneDark: '#e8ded2',
-        stoneShadow: '#dad0c0',
-        plinthCurb: '#573c2a',
-        qrFinderDark: '#3b0d0c',
-        qrDataColors: ['#fde047', '#fb923c', '#dc2626', '#7f1d1d'],
+        stoneLight: '#fdf8f0',
+        stoneDark: '#f5ebd9',
+        stoneShadow: '#e5d3bc',
+        plinthCurb: '#502d1d',
+        qrFinderDark: '#3b0a0a',
+        qrDataColors: ['#fef08a', '#f59e0b', '#ea580c', '#dc2626', '#7f1d1d'],
       };
     case 'spring':
       return {
-        leafTint: 0xf472b6, // Sakura blossom pink
-        barkTint: 0x4a3525,
+        leafTexture: '/assets/leaves/oak_spring.png',
+        barkTint: 0x3d211a, // Warm cherry tree bark
         grassMid: '#16a34a',
         grassTip: '#4ade80',
         flowerColors: ['#ffffff', '#fbcfe8', '#f472b6'],
         fallenLeaves: ['#fbcfe8', '#f472b6', '#fda4af', '#fff1f2'],
-        stoneLight: '#f6f2ec',
-        stoneDark: '#ece5dc',
-        stoneShadow: '#ddd4c9',
-        plinthCurb: '#4a3832',
+        stoneLight: '#fdf9f9',
+        stoneDark: '#f5eaed',
+        stoneShadow: '#e7d6dc',
+        plinthCurb: '#4a2f35',
         qrFinderDark: '#4c0519',
-        qrDataColors: ['#fff1f2', '#fbcfe8', '#f43f5e', '#881337'],
+        qrDataColors: ['#fff1f2', '#fbcfe8', '#f472b6', '#db2777', '#881337'],
       };
     case 'winter':
       return {
-        leafTint: 0xe2e8f0, // Frost snow
-        barkTint: 0x292524,
+        leafTexture: '/assets/leaves/oak_winter.png',
+        barkTint: 0x1e242d, // Weathered dark winter birch/pine
         grassMid: '#475569',
         grassTip: '#94a3b8',
-        flowerColors: ['#ffffff', '#e2e8f0', '#bae6fd'],
+        flowerColors: ['#ffffff', '#bae6fd', '#e0f2fe'],
         fallenLeaves: ['#ffffff', '#e2e8f0', '#cbd5e1', '#94a3b8'],
-        stoneLight: '#f1f5f9',
-        stoneDark: '#e2e8f0',
-        stoneShadow: '#cbd5e1',
-        plinthCurb: '#334155',
-        qrFinderDark: '#0f172a',
-        qrDataColors: ['#ffffff', '#bae6fd', '#64748b', '#1e293b'],
+        stoneLight: '#f8fafc',
+        stoneDark: '#eef2f6',
+        stoneShadow: '#dbe2ea',
+        plinthCurb: '#283548',
+        qrFinderDark: '#020617',
+        qrDataColors: ['#ffffff', '#bae6fd', '#38bdf8', '#0284c7', '#0f172a'],
       };
     case 'cyberpunk':
       return {
-        leafTint: 0xd946ef,
-        barkTint: 0x1e1b4b,
+        leafTexture: '/assets/leaves/oak_cyberpunk.png',
+        barkTint: 0x150d2a, // Obsidian dark violet
         grassMid: '#6366f1',
-        grassTip: '#38bdf8',
-        flowerColors: ['#06b6d4', '#f43f5e', '#a855f7'],
+        grassTip: '#06b6d4',
+        flowerColors: ['#00f5ff', '#f43f5e', '#a855f7'],
         fallenLeaves: ['#f43f5e', '#ec4899', '#a855f7', '#06b6d4'],
-        stoneLight: '#1e293b',
-        stoneDark: '#0f172a',
-        stoneShadow: '#020617',
-        plinthCurb: '#020617',
-        qrFinderDark: '#170326',
-        qrDataColors: ['#f5d0fe', '#d946ef', '#7c3aed', '#2e1065'],
+        stoneLight: '#182032',
+        stoneDark: '#0d1322',
+        stoneShadow: '#050811',
+        plinthCurb: '#030712',
+        qrFinderDark: '#050212',
+        qrDataColors: ['#00f5ff', '#22d3ee', '#ec4899', '#c026d3', '#6b21a8'],
       };
     case 'summer':
     default:
       return {
-        leafTint: 0x48bb78, // Lush vibrant emerald green (matching reference photo)
-        barkTint: 0x5c4033, // Rich warm oak bark
-        grassMid: '#16a34a',
-        grassTip: '#4ade80',
+        leafTexture: '/assets/leaves/oak_summer.png',
+        barkTint: 0x422a1b, // Rich deep aged oak bark
+        grassMid: '#15803d',
+        grassTip: '#22c55e',
         flowerColors: ['#ffffff', '#fde047', '#f472b6'],
-        fallenLeaves: ['#a3e635', '#4ade80', '#bef264', '#fde047'],
-        stoneLight: '#f5f0e6',
-        stoneDark: '#ede5d8',
-        stoneShadow: '#dfd5c4',
-        plinthCurb: '#4a3b32',
-        qrFinderDark: '#052e16',
-        qrDataColors: ['#a3e635', '#4ade80', '#22c55e', '#14532d'],
+        fallenLeaves: ['#86efac', '#4ade80', '#22c55e', '#16a34a'],
+        stoneLight: '#faf6ee',
+        stoneDark: '#eee5d5',
+        stoneShadow: '#decbb8',
+        plinthCurb: '#453225',
+        qrFinderDark: '#052912',
+        qrDataColors: ['#86efac', '#4ade80', '#22c55e', '#15803d', '#14532d'],
       };
   }
 }
@@ -392,10 +397,9 @@ export const treeStyle: QRStyleGenerator = {
     const treeGroup = new THREE.Group();
     treeGroup.name = 'RealisticOakTree';
 
-    // Clone preset options and apply seasonal tints
     const treeOptions = JSON.parse(JSON.stringify(OAK_TREE_PRESET));
-    treeOptions.leaves.tint = palette.leafTint;
     treeOptions.bark.tint = palette.barkTint;
+    treeOptions.leaves.tint = 0xffffff; // Pure white tint so seasonal texture shines in full brilliance!
 
     const realisticTree = new Tree();
     realisticTree.loadFromJson(treeOptions);
@@ -405,6 +409,24 @@ export const treeStyle: QRStyleGenerator = {
     const treeScale = 0.26;
     realisticTree.scale.set(treeScale, treeScale, treeScale);
     realisticTree.position.set(0, paverBlockHeight, 0);
+
+    // Apply high-res seasonal leaf texture
+    const textureLoader = new THREE.TextureLoader();
+    const seasonalLeafTexture = textureLoader.load(palette.leafTexture);
+    seasonalLeafTexture.colorSpace = THREE.SRGBColorSpace;
+
+    if (realisticTree.leavesMesh && realisticTree.leavesMesh.material) {
+      // ez-tree creates a MeshPhongMaterial with wind vertex shader
+      const leafMat = realisticTree.leavesMesh.material as any;
+      leafMat.map = seasonalLeafTexture;
+      leafMat.color.set(0xffffff); // 100% true vibrant texture color
+      if ('shininess' in leafMat) {
+        leafMat.shininess = 2; // Prevent specular glare from washing out deep rich chlorophyll/pigment!
+        leafMat.specular = new THREE.Color(0x050505);
+      }
+      leafMat.alphaTest = 0.32;
+      leafMat.needsUpdate = true;
+    }
 
     // Enable castShadow & receiveShadow on branches and leaves
     realisticTree.traverse((child) => {

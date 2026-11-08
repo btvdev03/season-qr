@@ -154,22 +154,22 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       rockSecondary: '#99a79e',
     },
     lighting: {
-      ambientColor: '#ffeef4',
-      ambientIntensity: 0.95,
-      sunColor: '#fff9e6',
-      sunIntensity: 1.4,
+      ambientColor: '#fff0f5',
+      ambientIntensity: 0.65,
+      sunColor: '#fff8f0',
+      sunIntensity: 1.15,
       sunPosition: [16, 28, 16],
-      skyColor: '#eef6fc',
-      fogColor: '#f2f7fb',
+      skyColor: '#fdf2f8',
+      fogColor: '#fdf2f8',
       fogDensity: 0.005,
     },
     weather: {
       type: 'petals',
       count: 65,
-      speed: 0.9,
+      speed: 0.85,
       size: 0.35,
-      colors: ['#ffb3c6', '#ff8fa3', '#ffe5ec', '#ffccd5'],
-      swayAmplitude: 0.8,
+      colors: ['#f472b6', '#fbcfe8', '#fda4af', '#fff1f2'],
+      swayAmplitude: 0.85,
       swayFrequency: 1.8,
       rising: false,
     },
@@ -191,10 +191,10 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       finderLight: '#ffffff',
     },
     foliage: {
-      primary: '#27ae60', // Lush emerald green
-      secondary: '#2ecc71', // Bright sunlight leaves
-      accent: '#f39c12', // Ripe golden summer fruit
-      subAccent: '#e74c3c', // Sweet ruby berries
+      primary: '#16a34a', // Lush emerald green
+      secondary: '#22c55e', // Bright sunlight leaves
+      accent: '#facc15', // Ripe golden summer fruit
+      subAccent: '#ef4444', // Sweet ruby berries
     },
     structure: {
       trunkPrimary: '#3d2b18',
@@ -203,10 +203,10 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       rockSecondary: '#a09a8e',
     },
     lighting: {
-      ambientColor: '#fff5e6',
-      ambientIntensity: 0.95,
-      sunColor: '#fffbe8',
-      sunIntensity: 1.5,
+      ambientColor: '#f0fdf4',
+      ambientIntensity: 0.65,
+      sunColor: '#fffef0',
+      sunIntensity: 1.15,
       sunPosition: [18, 32, 14],
       skyColor: '#e0f2fe',
       fogColor: '#e2f4ff',
@@ -217,7 +217,7 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       count: 45,
       speed: 0.6,
       size: 0.3,
-      colors: ['#f9d71c', '#ffe66d', '#80ed99', '#a7f3d0'],
+      colors: ['#4ade80', '#facc15', '#a3e635', '#86efac'],
       swayAmplitude: 0.6,
       swayFrequency: 1.2,
       rising: true,
@@ -240,10 +240,10 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       finderLight: '#ffffff',
     },
     foliage: {
-      primary: '#d35400', // Flaming pumpkin orange
-      secondary: '#c0392b', // Deep maple red
-      accent: '#f1c40f', // Bright golden yellow
-      subAccent: '#8e44ad',
+      primary: '#dc2626', // Flaming Kyoto maple red
+      secondary: '#ea580c', // Deep autumn orange
+      accent: '#f59e0b', // Bright golden amber
+      subAccent: '#b91c1c',
     },
     structure: {
       trunkPrimary: '#341f17',
@@ -252,10 +252,10 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       rockSecondary: '#8a837c',
     },
     lighting: {
-      ambientColor: '#fff1e0',
-      ambientIntensity: 0.95,
-      sunColor: '#ffe5b4',
-      sunIntensity: 1.45,
+      ambientColor: '#fff7ed',
+      ambientIntensity: 0.65,
+      sunColor: '#ffedd5',
+      sunIntensity: 1.15,
       sunPosition: [15, 26, 18],
       skyColor: '#fef3c7',
       fogColor: '#fef3c7',
@@ -266,7 +266,7 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       count: 55,
       speed: 0.9,
       size: 0.38,
-      colors: ['#c0392b', '#d35400', '#e67e22', '#f39c12'],
+      colors: ['#dc2626', '#ea580c', '#f59e0b', '#b91c1c'],
       swayAmplitude: 0.9,
       swayFrequency: 1.5,
       rising: false,
@@ -290,9 +290,9 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
     },
     foliage: {
       primary: '#1e3a5f', // Deep alpine slate
-      secondary: '#38bdf8', // Frost ice blue
+      secondary: '#0284c7', // Frost ice blue
       accent: '#ffffff', // Pure fresh snowfall crowns
-      subAccent: '#bae6fd',
+      subAccent: '#7dd3fc',
     },
     structure: {
       trunkPrimary: '#1e293b',
@@ -301,10 +301,10 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       rockSecondary: '#64748b',
     },
     lighting: {
-      ambientColor: '#e0f2fe',
-      ambientIntensity: 0.95,
-      sunColor: '#f0f9ff',
-      sunIntensity: 1.4,
+      ambientColor: '#f0f9ff',
+      ambientIntensity: 0.65,
+      sunColor: '#f8fafc',
+      sunIntensity: 1.15,
       sunPosition: [14, 28, 14],
       skyColor: '#f1f5f9',
       fogColor: '#f1f5f9',
@@ -340,8 +340,8 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
     foliage: {
       primary: '#d946ef', // Neon fuchsia hologram
       secondary: '#06b6d4', // High-voltage cyan
-      accent: '#facc15', // Electric yellow laser
-      subAccent: '#8b5cf6',
+      accent: '#00f5ff', // Electric laser cyan
+      subAccent: '#a855f7',
     },
     structure: {
       trunkPrimary: '#1e1b4b',
@@ -351,9 +351,9 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
     },
     lighting: {
       ambientColor: '#2e1065',
-      ambientIntensity: 0.95,
+      ambientIntensity: 0.75,
       sunColor: '#06b6d4',
-      sunIntensity: 1.35,
+      sunIntensity: 1.2,
       sunPosition: [12, 24, 12],
       skyColor: '#030712',
       fogColor: '#050a17',
