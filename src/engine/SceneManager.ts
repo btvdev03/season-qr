@@ -82,8 +82,8 @@ export class SceneManager {
   private destCamUp = new THREE.Vector3();
 
   // Presets
-  private readonly ISO_POS = new THREE.Vector3(24, 22, 24);
-  private readonly ISO_TARGET = new THREE.Vector3(0, 6.0, 0);
+  private readonly ISO_POS = new THREE.Vector3(22, 14, 22);
+  private readonly ISO_TARGET = new THREE.Vector3(0, 7.5, 0);
   private readonly ISO_UP = new THREE.Vector3(0, 1, 0);
 
   // Height ~36 gives full view of the 24-unit slab with comfortable padding
@@ -131,9 +131,10 @@ export class SceneManager {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
     this.controls.target.copy(this.ISO_TARGET);
-    this.controls.minDistance = 8;
-    this.controls.maxDistance = 90;
-    this.controls.maxPolarAngle = Math.PI / 2 + 0.12;
+    this.controls.minDistance = 14;
+    this.controls.maxDistance = 60;
+    this.controls.minPolarAngle = Math.PI / 4.5;
+    this.controls.maxPolarAngle = Math.PI / 2.15;
     this.controls.autoRotate = this.isAutoRotating;
     this.controls.autoRotateSpeed = 0.8;
 
@@ -354,6 +355,14 @@ export class SceneManager {
     const targetPos = mode === 'topDown' ? this.SCAN_POS : this.ISO_POS;
     const targetLook = mode === 'topDown' ? this.SCAN_TARGET : this.ISO_TARGET;
     const targetUp = mode === 'topDown' ? this.SCAN_UP : this.ISO_UP;
+
+    if (mode === 'topDown') {
+      this.controls.minPolarAngle = 0;
+      this.controls.maxPolarAngle = Math.PI;
+    } else {
+      this.controls.minPolarAngle = Math.PI / 4.5;
+      this.controls.maxPolarAngle = Math.PI / 2.15;
+    }
 
     this.scanModeTarget = mode === 'topDown' ? 1 : 0;
     this.scanModeStart = this.scanModeProgress;

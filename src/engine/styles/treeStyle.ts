@@ -1,22 +1,26 @@
 /**
- * SeasonQR - Authentic Botanical Tree & Mosaic QR Transformer
+ * SeasonQR - Authentic Ghibli Botanical Tree & Garden Mosaic QR Transformer
  *
- * Implements the exact botanical architecture of ICQR Magic Tree:
+ * Implements a gorgeous, fluffy, volumetric 3D botanical tree (Image 2):
  * 1. Living Botanical Tree Mode:
- *    - Curving organic trunk with mathematical bark lean & taper (function se).
- *    - Graceful multi-forking branches winding through negative space into 22 foliage cloud anchors.
- *    - Over 2,600 small, soft, textured foliage quads (0.55 scale) with alpha-tested leaf silhouettes.
- *    - Voluminous, fluffy Ghibli-style tree canopy with lush sunlit color gradient:
+ *    - Curving, tapered organic trunk with warm wood bark.
+ *    - Graceful boughs reaching upward into the canopy, terminating inside foliage clouds.
+ *    - Volumetric fluffy foliage cloud masses (displaced organic icosahedron lobes)
+ *      forming a lush, rounded, voluminous teardrop canopy (Y from 4.8 to 15.5).
+ *    - Beautiful sunlight gradient:
  *      * Sunlit lime highlights on top (#bef264, #a3e635)
  *      * Lush emerald midtones in the body (#4ade80, #22c55e)
  *      * Deep forest shadows underneath (#166534, #14532d)
- *    - Real-time harmonic wind sway & flutter physics (60 FPS).
- *    - Isometric stone patio with multi-blade grass tufts at corners and scattered fallen petals.
+ *    - Delicate surface leaf flakes feathering the canopy silhouette.
+ *    - Natural, soothing, harmonic wind sway physics (60 FPS) where the whole tree
+ *      breathes together in the breeze, instead of chaotic independent spinning!
+ *    - Isometric stone patio with multi-blade grass tufts and scattered fallen petals.
  *
- * 2. Signature Leaf Flight & Garden Mosaic QR Mode (Image 4):
- *    - Tapping triggers the canopy foliage to cascade down in organic curved wind-drift arcs.
+ * 2. Signature Garden Mosaic QR Mode (Image 4):
+ *    - Tapping triggers camera transition to clean top-down view.
+ *    - The tree canopy and branches gracefully collapse/shrink down into the patio.
  *    - The ground plate emerges into the exact multi-tone artistic mosaic QR code (Image 4).
- *    - Modules touch seamlessly at 1.002 scale for 100% instant phone camera lock.
+ *    - Seamless 1.002 module scale for 100% instantaneous camera scan lock.
  */
 
 import * as THREE from 'three';
@@ -26,16 +30,20 @@ export interface MorphableTreeGroup extends THREE.Group {
   updateMorph?: (progress: number, time?: number, delta?: number) => void;
 }
 
-interface FoliageLeaf {
-  treePos: THREE.Vector3;
-  treeRot: THREE.Euler;
-  treeScale: THREE.Vector3;
-  targetPos: THREE.Vector3;
-  delay: number;
-  arcY: number;
-  spin: number;
+interface FoliageCloud {
+  mesh: THREE.Mesh;
+  basePos: THREE.Vector3;
+  baseScale: THREE.Vector3;
   phase: number;
   swayAmp: number;
+}
+
+interface LeafFlake {
+  basePos: THREE.Vector3;
+  baseRot: THREE.Euler;
+  baseScale: THREE.Vector3;
+  phase: number;
+  cloudIdx: number;
 }
 
 interface QRMosaicModule {
@@ -103,46 +111,44 @@ function getSeasonalPalette(seasonId: string) {
 }
 
 /**
- * Procedural leaf silhouette texture with natural organic contour and vein
+ * Creates an organic fluffy foliage cloud geometry (displaced icosahedron)
  */
-function createFoliageTexture(): THREE.CanvasTexture {
+function createFoliageCloudGeometry(radius: number, seed: number): THREE.BufferGeometry {
+  const geo = new THREE.IcosahedronGeometry(radius, 2);
+  const pos = geo.attributes.position;
+  const v = new THREE.Vector3();
+
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const dir = v.clone().normalize();
+    const noise =
+      Math.sin(v.x * 1.4 + seed) * 0.16 +
+      Math.cos(v.y * 1.6 + seed * 1.3) * 0.16 +
+      Math.sin(v.z * 1.4 + seed * 0.7) * 0.16;
+    v.addScaledVector(dir, noise * radius);
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/**
+ * Procedural leaf silhouette texture for surface feathering
+ */
+function createLeafFlakeTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
-  canvas.width = 128;
-  canvas.height = 128;
+  canvas.width = 64;
+  canvas.height = 64;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.clearRect(0, 0, 128, 128);
-
-  // Soft organic leaf silhouette
+  ctx.clearRect(0, 0, 64, 64);
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  ctx.moveTo(64, 10);
-  ctx.bezierCurveTo(100, 22, 118, 62, 98, 100);
-  ctx.bezierCurveTo(82, 122, 46, 122, 30, 100);
-  ctx.bezierCurveTo(10, 62, 28, 22, 64, 10);
+  ctx.moveTo(32, 6);
+  ctx.bezierCurveTo(52, 14, 58, 36, 48, 52);
+  ctx.bezierCurveTo(40, 60, 24, 60, 16, 52);
+  ctx.bezierCurveTo(6, 36, 12, 14, 32, 6);
   ctx.fill();
-
-  // Subtle interior vein highlight
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-  ctx.lineWidth = 3.5;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(64, 25);
-  ctx.quadraticCurveTo(63, 65, 64, 106);
-  ctx.stroke();
-
-  // Lateral veins
-  ctx.lineWidth = 2.0;
-  ctx.beginPath();
-  ctx.moveTo(64, 45);
-  ctx.quadraticCurveTo(78, 52, 86, 62);
-  ctx.moveTo(64, 45);
-  ctx.quadraticCurveTo(50, 52, 42, 62);
-  ctx.moveTo(64, 72);
-  ctx.quadraticCurveTo(80, 78, 86, 88);
-  ctx.moveTo(64, 72);
-  ctx.quadraticCurveTo(48, 78, 42, 88);
-  ctx.stroke();
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.ClampToEdgeWrapping;
@@ -167,7 +173,7 @@ export const treeStyle: QRStyleGenerator = {
     const palette = getSeasonalPalette(season.id);
 
     const rootGroup = new THREE.Group() as MorphableTreeGroup;
-    rootGroup.name = 'Style_BotanicalTree';
+    rootGroup.name = 'Style_BotanicalGhibliTree';
 
     const halfScene = sceneSize / 2;
     const toWorldPos = (r: number, c: number) => ({
@@ -193,7 +199,7 @@ export const treeStyle: QRStyleGenerator = {
     slabMesh.receiveShadow = true;
     groundGroup.add(slabMesh);
 
-    // Warm cream patio surface floor
+    // Warm cream patio floor
     const topFloorGeo = new THREE.BoxGeometry(sceneSize * 0.998, 0.04, sceneSize * 0.998);
     const topFloorMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(palette.stoneLight),
@@ -205,7 +211,7 @@ export const treeStyle: QRStyleGenerator = {
     topFloor.receiveShadow = true;
     groundGroup.add(topFloor);
 
-    // Subtle stone tile textures for light modules
+    // Subtle stone paver texture for light modules
     let lightTileCount = 0;
     for (let r = 0; r < N; r++) {
       for (let c = 0; c < N; c++) {
@@ -314,48 +320,37 @@ export const treeStyle: QRStyleGenerator = {
     rootGroup.add(grassGroup);
 
     // ==========================================
-    // 3. CURVING ORGANIC TRUNK & BRANCH NETWORK (function se)
+    // 3. ORGANIC TRUNK & UPWARD BOUGHS
     // ==========================================
     const trunkGroup = new THREE.Group();
     trunkGroup.name = 'TreeTrunk';
 
     const trunkMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(palette.trunk),
-      roughness: 0.82,
+      roughness: 0.85,
       metalness: 0.05,
     });
     const branchMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(palette.branch),
-      roughness: 0.78,
+      roughness: 0.8,
       metalness: 0.05,
     });
 
-    // Trunk architecture following ICQR function se
-    const trunkHeight = 11.5;
-    const trunkSegments = 10;
+    // Tall upright trunk with gentle natural taper and curve
+    const trunkHeight = 10.0;
+    const trunkSegments = 8;
     const trunkBaseR = moduleSize * 0.85;
-    const trunkLean = rng.range(0.4, 0.7) * (rng.chance(0.5) ? 1 : -1);
 
-    interface CanopyAnchor {
-      x: number;
-      y: number;
-      z: number;
-      radius: number;
-    }
-    const canopyAnchors: CanopyAnchor[] = [];
-
-    // Evaluate mathematical trunk spine
     const trunkPoints: { x: number; y: number; z: number; r: number }[] = [];
     for (let s = 0; s <= trunkSegments; s++) {
-      const t = s / trunkSegments; // 0 -> 1
-      const x = trunkLean * t * t + 0.3 * trunkLean * Math.sin(t * Math.PI * 1.5);
+      const t = s / trunkSegments;
+      const x = 0.35 * Math.sin(t * Math.PI * 0.8);
       const y = t * trunkHeight;
-      const z = 0.5 * trunkLean * Math.sin(t * Math.PI * 0.8);
-      const r = trunkBaseR * (1.0 - 0.55 * t) * (1.0 + 0.08 * Math.sin(t * Math.PI * 0.8));
+      const z = 0.25 * Math.sin(t * Math.PI * 1.2);
+      const r = trunkBaseR * (1.0 - 0.52 * t);
       trunkPoints.push({ x, y, z, r });
     }
 
-    // Build tapered cylinder mesh segments for the trunk
     for (let s = 0; s < trunkSegments; s++) {
       const pA = trunkPoints[s];
       const pB = trunkPoints[s + 1];
@@ -371,220 +366,182 @@ export const treeStyle: QRStyleGenerator = {
       segMesh.rotateX(Math.PI / 2);
       segMesh.castShadow = true;
       trunkGroup.add(segMesh);
-
-      // Anchor foliage clusters along upper half of trunk
-      if (s >= 4) {
-        canopyAnchors.push({
-          x: pB.x,
-          y: pB.y,
-          z: pB.z,
-          radius: rng.range(2.6, 3.8),
-        });
-      }
     }
 
-    // Major branches branching outward into the crown
-    const numMajorBranches = 8;
-    for (let b = 0; b < numMajorBranches; b++) {
-      const bFrac = b / numMajorBranches;
-      const startIdx = Math.floor(rng.range(4, 9));
+    // ==========================================
+    // 4. VOLUMETRIC FOLIAGE CLOUDS (14 Volumetric Masses)
+    // ==========================================
+    const canopyGroup = new THREE.Group();
+    canopyGroup.name = 'CanopyFoliage';
+
+    interface CloudConfig {
+      x: number;
+      y: number;
+      z: number;
+      radius: number;
+      color: string;
+      phase: number;
+    }
+
+    // 14 carefully calibrated cloud positions forming the lush teardrop silhouette
+    const cloudConfigs: CloudConfig[] = [
+      // Crown Pinnacle (Top peak)
+      { x: 0.1, y: 14.2, z: 0.1, radius: 2.8, color: rng.choice(palette.highlights), phase: 0 },
+      // Upper Shoulders (High layer)
+      { x: 1.8, y: 12.6, z: 1.4, radius: 3.2, color: rng.choice(palette.highlights), phase: 1.2 },
+      { x: -1.7, y: 12.8, z: 1.2, radius: 3.1, color: rng.choice(palette.highlights), phase: 2.5 },
+      { x: 1.2, y: 12.4, z: -1.8, radius: 3.3, color: rng.choice(palette.highlights), phase: 3.8 },
+      { x: -1.5, y: 12.5, z: -1.5, radius: 3.0, color: rng.choice(palette.highlights), phase: 5.1 },
+      // Main Belly of Canopy (Wide, lush, dense mid-layer)
+      { x: 3.2, y: 10.2, z: 1.6, radius: 3.8, color: rng.choice(palette.midtones), phase: 0.7 },
+      { x: -3.0, y: 10.4, z: 1.8, radius: 3.9, color: rng.choice(palette.midtones), phase: 2.1 },
+      { x: 2.8, y: 10.0, z: -2.6, radius: 3.7, color: rng.choice(palette.midtones), phase: 3.4 },
+      { x: -2.9, y: 10.2, z: -2.4, radius: 3.8, color: rng.choice(palette.midtones), phase: 4.8 },
+      { x: 0.2, y: 10.6, z: 3.2, radius: 3.6, color: rng.choice(palette.midtones), phase: 1.5 },
+      { x: -0.2, y: 10.5, z: -3.4, radius: 3.6, color: rng.choice(palette.midtones), phase: 2.9 },
+      // Lower Skirt (Bottom layer wrapping the trunk)
+      { x: 2.2, y: 7.8, z: 2.0, radius: 3.2, color: rng.choice(palette.shadows), phase: 4.2 },
+      { x: -2.4, y: 7.9, z: 1.9, radius: 3.3, color: rng.choice(palette.shadows), phase: 0.3 },
+      { x: 0.5, y: 7.6, z: -2.8, radius: 3.1, color: rng.choice(palette.shadows), phase: 1.9 },
+    ];
+
+    const foliageClouds: FoliageCloud[] = [];
+
+    // Build graceful boughs from trunk reaching into each cloud center
+    for (let c = 0; c < cloudConfigs.length; c++) {
+      const cfg = cloudConfigs[c];
+
+      // Connect bough from trunk point to cloud center (ending safely inside the cloud!)
+      const startIdx = Math.min(
+        trunkSegments - 1,
+        Math.max(3, Math.floor((cfg.y / trunkHeight) * (trunkSegments - 1)))
+      );
       const startP = trunkPoints[startIdx];
 
-      const bAngle = bFrac * Math.PI * 2 + rng.range(-0.3, 0.3);
-      const bLength = rng.range(4.0, 5.8);
-      const bElevation = rng.range(0.35, 0.65);
+      // End point stops short inside the cloud (80% towards center so it never pokes out!)
+      const targetX = cfg.x * 0.82;
+      const targetY = cfg.y * 0.92;
+      const targetZ = cfg.z * 0.82;
 
-      const endX = startP.x + Math.cos(bAngle) * bLength * Math.cos(bElevation);
-      const endY = startP.y + bLength * Math.sin(bElevation);
-      const endZ = startP.z + Math.sin(bAngle) * bLength * Math.cos(bElevation);
-
-      const midX = (startP.x + endX) / 2;
-      const midY = (startP.y + endY) / 2;
-      const midZ = (startP.z + endZ) / 2;
-      const len = Math.hypot(endX - startP.x, endY - startP.y, endZ - startP.z);
+      const midX = (startP.x + targetX) / 2;
+      const midY = (startP.y + targetY) / 2;
+      const midZ = (startP.z + targetZ) / 2;
+      const bLen = Math.hypot(targetX - startP.x, targetY - startP.y, targetZ - startP.z);
 
       const bGeo = new THREE.CylinderGeometry(
-        0.13 * moduleSize,
-        0.28 * moduleSize,
-        len,
+        0.12 * moduleSize,
+        0.24 * moduleSize,
+        bLen,
         6
       );
       const bMesh = new THREE.Mesh(bGeo, branchMat);
       bMesh.position.set(midX, midY, midZ);
-      bMesh.lookAt(endX, endY, endZ);
+      bMesh.lookAt(targetX, targetY, targetZ);
       bMesh.rotateX(Math.PI / 2);
       bMesh.castShadow = true;
       trunkGroup.add(bMesh);
 
-      canopyAnchors.push({
-        x: endX,
-        y: endY,
-        z: endZ,
-        radius: rng.range(2.5, 3.6),
+      // Create the volumetric foliage cloud mesh
+      const cloudGeo = createFoliageCloudGeometry(cfg.radius, c * 1.7);
+      const cloudMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(cfg.color),
+        roughness: 0.65,
+        metalness: 0.0,
+        flatShading: false,
       });
 
-      // Secondary twig branching
-      const numSub = rng.int(1, 2);
-      for (let sb = 0; sb < numSub; sb++) {
-        const subAngle = bAngle + rng.range(-0.5, 0.5);
-        const subLen = rng.range(2.0, 3.2);
-        const subElev = rng.range(0.2, 0.55);
+      const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+      cloudMesh.position.set(cfg.x, cfg.y, cfg.z);
+      cloudMesh.castShadow = true;
+      cloudMesh.receiveShadow = true;
+      canopyGroup.add(cloudMesh);
 
-        const subEndX = endX + Math.cos(subAngle) * subLen * Math.cos(subElev);
-        const subEndY = endY + subLen * Math.sin(subElev);
-        const subEndZ = endZ + Math.sin(subAngle) * subLen * Math.cos(subElev);
-
-        const subMidX = (endX + subEndX) / 2;
-        const subMidY = (endY + subEndY) / 2;
-        const subMidZ = (endZ + subEndZ) / 2;
-        const subLenActual = Math.hypot(subEndX - endX, subEndY - endY, subEndZ - endZ);
-
-        const subGeo = new THREE.CylinderGeometry(
-          0.08 * moduleSize,
-          0.13 * moduleSize,
-          subLenActual,
-          4
-        );
-        const subMesh = new THREE.Mesh(subGeo, branchMat);
-        subMesh.position.set(subMidX, subMidY, subMidZ);
-        subMesh.lookAt(subEndX, subEndY, subEndZ);
-        subMesh.rotateX(Math.PI / 2);
-        subMesh.castShadow = true;
-        trunkGroup.add(subMesh);
-
-        canopyAnchors.push({
-          x: subEndX,
-          y: subEndY,
-          z: subEndZ,
-          radius: rng.range(2.0, 3.0),
-        });
-      }
+      foliageClouds.push({
+        mesh: cloudMesh,
+        basePos: new THREE.Vector3(cfg.x, cfg.y, cfg.z),
+        baseScale: new THREE.Vector3(1, 1, 1),
+        phase: cfg.phase,
+        swayAmp: rng.range(0.12, 0.22),
+      });
     }
-
-    // Top pinnacle anchors
-    const topP = trunkPoints[trunkPoints.length - 1];
-    canopyAnchors.push({
-      x: topP.x,
-      y: topP.y + 1.8,
-      z: topP.z,
-      radius: 3.2,
-    });
-    canopyAnchors.push({
-      x: topP.x + 0.6,
-      y: topP.y + 3.2,
-      z: topP.z + 0.3,
-      radius: 2.5,
-    });
 
     rootGroup.add(trunkGroup);
 
     // ==========================================
-    // 4. LUSH FOLIAGE CLOUDS (2,600+ Fluffy Leaf Cards, Image 2)
+    // 5. SURFACE LEAF FLAKES (Delicate Edge Feathering)
     // ==========================================
-    const foliageTex = createFoliageTexture();
-    const foliageMat = new THREE.MeshStandardMaterial({
-      map: foliageTex,
+    const leafTex = createLeafFlakeTexture();
+    const leafFlakeMat = new THREE.MeshStandardMaterial({
+      map: leafTex,
       transparent: true,
       alphaTest: 0.35,
-      roughness: 0.5,
+      roughness: 0.55,
       metalness: 0.05,
       side: THREE.DoubleSide,
     });
 
-    // Small, soft leaf card geometry
-    const leafGeo = new THREE.PlaneGeometry(moduleSize * 0.55, moduleSize * 0.65);
-    leafGeo.rotateX(-Math.PI / 2);
+    const totalFlakes = cloudConfigs.length * 40; // ~560 delicate flakes
+    const flakeGeo = new THREE.PlaneGeometry(moduleSize * 0.45, moduleSize * 0.55);
+    flakeGeo.rotateX(-Math.PI / 2);
 
-    const totalFoliageCount = canopyAnchors.length * 120; // ~2,640 leaves!
-    const foliageMesh = new THREE.InstancedMesh(leafGeo, foliageMat, totalFoliageCount);
-    foliageMesh.name = 'FoliageCanopy';
-    foliageMesh.castShadow = true;
-    foliageMesh.receiveShadow = true;
+    const leafFlakesMesh = new THREE.InstancedMesh(flakeGeo, leafFlakeMat, totalFlakes);
+    leafFlakesMesh.castShadow = true;
+    leafFlakesMesh.receiveShadow = true;
 
-    const foliageLeaves: FoliageLeaf[] = [];
-    const dummyFoliage = new THREE.Object3D();
+    const leafFlakes: LeafFlake[] = [];
+    const dummyFlake = new THREE.Object3D();
 
-    let fIdx = 0;
-    for (let a = 0; a < canopyAnchors.length; a++) {
-      const anchor = canopyAnchors[a];
-      const leavesInCluster = 120;
+    let flIdx = 0;
+    for (let c = 0; c < cloudConfigs.length; c++) {
+      const cfg = cloudConfigs[c];
 
-      for (let l = 0; l < leavesInCluster; l++) {
-        // Organic spherical cloud distribution with power falloff
+      for (let f = 0; f < 40; f++) {
+        // Positioned along the outer surface of each cloud
         const theta = rng.angle();
         const phi = Math.acos(rng.range(-1, 1));
-        const dist = Math.cbrt(rng.next()) * anchor.radius;
+        const surfR = cfg.radius * rng.range(0.92, 1.15);
 
-        const lx = anchor.x + dist * Math.sin(phi) * Math.cos(theta);
-        const ly = anchor.y + dist * Math.sin(phi) * Math.sin(theta) * 0.95;
-        const lz = anchor.z + dist * Math.cos(phi);
+        const fx = cfg.x + surfR * Math.sin(phi) * Math.cos(theta);
+        const fy = cfg.y + surfR * Math.sin(phi) * Math.sin(theta);
+        const fz = cfg.z + surfR * Math.cos(phi);
 
-        const treePos = new THREE.Vector3(lx, ly, lz);
-
-        // Natural outward normal angle with organic flutter tilt
-        const treeRot = new THREE.Euler(
-          rng.range(-0.8, 0.8),
+        const basePos = new THREE.Vector3(fx, fy, fz);
+        const baseRot = new THREE.Euler(
+          rng.range(-0.6, 0.6),
           rng.angle(),
-          rng.range(-0.8, 0.8)
+          rng.range(-0.6, 0.6)
         );
+        const s = rng.range(0.8, 1.3);
+        const baseScale = new THREE.Vector3(s, s, s);
 
-        // Fluffy natural card scale
-        const s = rng.range(0.85, 1.4);
-        const treeScale = new THREE.Vector3(s, s, s);
-
-        // Ground landing position when morphing (dissolves into wind drift)
-        const targetX = anchor.x + rng.range(-sceneSize * 0.45, sceneSize * 0.45);
-        const targetZ = anchor.z + rng.range(-sceneSize * 0.45, sceneSize * 0.45);
-        const targetPos = new THREE.Vector3(targetX, 0.035, targetZ);
-
-        const delay = rng.range(0, 0.28);
-        const arcY = rng.range(2.5, 4.5);
-        const spin = rng.range(3.0, 6.0) * (rng.chance(0.5) ? 1 : -1);
-        const phase = rng.range(0, Math.PI * 2);
-        const swayAmp = rng.range(0.25, 0.45);
-
-        foliageLeaves.push({
-          treePos,
-          treeRot,
-          treeScale,
-          targetPos,
-          delay,
-          arcY,
-          spin,
-          phase,
-          swayAmp,
+        leafFlakes.push({
+          basePos,
+          baseRot,
+          baseScale,
+          phase: rng.range(0, Math.PI * 2),
+          cloudIdx: c,
         });
 
-        // Botanical sunlight color gradient (Image 2)
-        const normH = THREE.MathUtils.clamp((ly - 4.0) / 11.5, 0, 1);
-        let colorHex: string;
-        if (normH > 0.72) {
-          colorHex = rng.choice(palette.highlights);
-        } else if (normH > 0.35) {
-          colorHex = rng.choice(palette.midtones);
-        } else {
-          colorHex = rng.choice(palette.shadows);
-        }
+        // Color matches parent cloud
+        leafFlakesMesh.setColorAt(flIdx, new THREE.Color(cfg.color));
 
-        foliageMesh.setColorAt(fIdx, new THREE.Color(colorHex));
+        dummyFlake.position.copy(basePos);
+        dummyFlake.rotation.copy(baseRot);
+        dummyFlake.scale.copy(baseScale);
+        dummyFlake.updateMatrix();
+        leafFlakesMesh.setMatrixAt(flIdx, dummyFlake.matrix);
 
-        // Initial 3D placement
-        dummyFoliage.position.copy(treePos);
-        dummyFoliage.rotation.copy(treeRot);
-        dummyFoliage.scale.copy(treeScale);
-        dummyFoliage.updateMatrix();
-        foliageMesh.setMatrixAt(fIdx, dummyFoliage.matrix);
-
-        fIdx++;
+        flIdx++;
       }
     }
 
-    foliageMesh.instanceMatrix.needsUpdate = true;
-    if (foliageMesh.instanceColor) foliageMesh.instanceColor.needsUpdate = true;
-    rootGroup.add(foliageMesh);
+    leafFlakesMesh.instanceMatrix.needsUpdate = true;
+    if (leafFlakesMesh.instanceColor) leafFlakesMesh.instanceColor.needsUpdate = true;
+    canopyGroup.add(leafFlakesMesh);
+    rootGroup.add(canopyGroup);
 
     // ==========================================
-    // 5. ARTISTIC GROUND MOSAIC QR CODE (Image 4)
+    // 6. ARTISTIC GROUND MOSAIC QR CODE (Image 4)
     // ==========================================
     interface DarkModule {
       row: number;
@@ -606,7 +563,6 @@ export const treeStyle: QRStyleGenerator = {
     }
 
     const qrTileCount = darkModules.length;
-    // Seamless mosaic tile geometry (touches adjacent modules at 1.002 scale)
     const qrTileGeo = new THREE.BoxGeometry(
       moduleSize * 1.002,
       0.045,
@@ -630,7 +586,7 @@ export const treeStyle: QRStyleGenerator = {
       const mod = darkModules[i];
       const { x, z } = toWorldPos(mod.row, mod.col);
 
-      // In tree mode: flush stone paver tint (#f5f0e6)
+      // In tree mode: stone paver tint (#f5f0e6)
       const colorTree = new THREE.Color(palette.stoneLight);
 
       // In QR mode: rich multi-tone mosaic greens (Image 4)
@@ -655,7 +611,7 @@ export const treeStyle: QRStyleGenerator = {
       qrModules.push({ worldPos, colorTree, colorQR });
 
       dummyQR.position.copy(worldPos);
-      dummyQR.scale.set(1, 0.2, 1); // low relief in tree mode
+      dummyQR.scale.set(1, 0.2, 1);
       dummyQR.updateMatrix();
       qrTileMesh.setMatrixAt(i, dummyQR.matrix);
       qrTileMesh.setColorAt(i, colorTree);
@@ -666,13 +622,13 @@ export const treeStyle: QRStyleGenerator = {
     rootGroup.add(qrTileMesh);
 
     // ==========================================
-    // 6. REAL-TIME WIND SWAY & MORPH ANIMATION (60 FPS)
+    // 7. REAL-TIME UNIFIED WIND BREEZE & MORPH ANIMATION (60 FPS)
     // ==========================================
     rootGroup.updateMorph = (progress: number, time: number = 0) => {
       const p = THREE.MathUtils.clamp(progress, 0, 1);
 
       // 1. Trunk and Grass scale down as we morph into flat QR
-      const decorScale = Math.max(0.0001, 1 - Math.pow(p, 1.3));
+      const decorScale = Math.max(0.0001, 1 - Math.pow(p, 1.4));
       trunkGroup.scale.set(decorScale, decorScale, decorScale);
       trunkGroup.visible = p < 0.98;
 
@@ -682,58 +638,49 @@ export const treeStyle: QRStyleGenerator = {
       fallenGroup.scale.set(decorScale, decorScale, decorScale);
       fallenGroup.visible = p < 0.98;
 
-      // Wind sway factor: full strength at p = 0, damped smoothly during transition
-      const windFactor = Math.pow(Math.max(0, 1 - p), 2.2);
+      canopyGroup.scale.set(decorScale, decorScale, decorScale);
+      canopyGroup.visible = p < 0.98;
 
-      // 2. Animate the 2,600+ foliage leaves (wind sway in tree mode, flight dissolve in QR mode)
-      foliageMesh.visible = p < 0.98;
-      if (foliageMesh.visible) {
-        for (let i = 0; i < totalFoliageCount; i++) {
-          const d = foliageLeaves[i];
+      // 2. Cohesive Natural Wind Sway (Unified peaceful breeze)
+      if (canopyGroup.visible) {
+        // Global wind wave across the whole tree
+        const globalWindX = Math.sin(time * 1.4) * 0.16;
+        const globalWindZ = Math.cos(time * 1.1) * 0.12;
 
-          // Harmonic wind sway (higher leaves sway with gentle breeze)
-          const heightFactor = Math.max(0.12, (d.treePos.y - 3.5) / 11.5);
-          const swayX = Math.sin(time * 2.2 + d.phase + d.treePos.y * 0.35) * d.swayAmp * heightFactor;
-          const swayZ = Math.cos(time * 1.8 + d.phase + d.treePos.x * 0.35) * d.swayAmp * heightFactor;
-          const swayY = Math.sin(time * 3.1 + d.phase) * (d.swayAmp * 0.35) * heightFactor;
+        // Animate each foliage cloud mass
+        for (let c = 0; c < foliageClouds.length; c++) {
+          const cloud = foliageClouds[c];
+          const hFactor = cloud.basePos.y / 12.0;
 
-          const flutterRoll = Math.sin(time * 3.8 + d.phase) * 0.18 * heightFactor;
-          const flutterPitch = Math.cos(time * 2.9 + d.phase) * 0.14 * heightFactor;
+          const cx = cloud.basePos.x + globalWindX * hFactor + Math.sin(time * 2.2 + cloud.phase) * cloud.swayAmp;
+          const cz = cloud.basePos.z + globalWindZ * hFactor + Math.cos(time * 1.8 + cloud.phase) * cloud.swayAmp;
+          const cy = cloud.basePos.y + Math.sin(time * 2.6 + cloud.phase) * (cloud.swayAmp * 0.4);
 
-          // Transition interpolation
-          const localT = THREE.MathUtils.clamp(
-            (p - d.delay) / (1 - 0.3),
-            0,
-            1
-          );
-
-          const ease =
-            localT < 0.5
-              ? 4 * localT * localT * localT
-              : 1 - Math.pow(-2 * localT + 2, 3) / 2;
-
-          const arc = Math.sin(localT * Math.PI) * d.arcY * (1 - p * 0.4);
-
-          dummyFoliage.position.x = THREE.MathUtils.lerp(d.treePos.x + swayX * windFactor, d.targetPos.x, ease);
-          dummyFoliage.position.y = THREE.MathUtils.lerp(d.treePos.y + swayY * windFactor, d.targetPos.y, ease) + arc;
-          dummyFoliage.position.z = THREE.MathUtils.lerp(d.treePos.z + swayZ * windFactor, d.targetPos.z, ease);
-
-          dummyFoliage.rotation.x = THREE.MathUtils.lerp(d.treeRot.x + flutterPitch * windFactor, 0, ease);
-          dummyFoliage.rotation.y = THREE.MathUtils.lerp(d.treeRot.y + d.spin * (1 - ease), 0, ease);
-          dummyFoliage.rotation.z = THREE.MathUtils.lerp(d.treeRot.z + flutterRoll * windFactor, 0, ease);
-
-          // As leaves fall to the ground, they dissolve away, revealing the clean mosaic QR!
-          const scaleMult = Math.max(0.0001, 1 - ease);
-          dummyFoliage.scale.set(
-            d.treeScale.x * scaleMult,
-            d.treeScale.y * scaleMult,
-            d.treeScale.z * scaleMult
-          );
-
-          dummyFoliage.updateMatrix();
-          foliageMesh.setMatrixAt(i, dummyFoliage.matrix);
+          cloud.mesh.position.set(cx, cy, cz);
         }
-        foliageMesh.instanceMatrix.needsUpdate = true;
+
+        // Animate surface leaf flakes (they sway gently with their parent cloud)
+        for (let f = 0; f < totalFlakes; f++) {
+          const flake = leafFlakes[f];
+          const hFactor = flake.basePos.y / 12.0;
+
+          const fx = flake.basePos.x + globalWindX * hFactor + Math.sin(time * 2.2 + flake.phase) * 0.08;
+          const fz = flake.basePos.z + globalWindZ * hFactor + Math.cos(time * 1.8 + flake.phase) * 0.08;
+          const fy = flake.basePos.y + Math.sin(time * 2.6 + flake.phase) * 0.04;
+
+          const flutter = Math.sin(time * 3.2 + flake.phase) * 0.08;
+
+          dummyFlake.position.set(fx, fy, fz);
+          dummyFlake.rotation.set(
+            flake.baseRot.x + flutter,
+            flake.baseRot.y,
+            flake.baseRot.z + flutter
+          );
+          dummyFlake.scale.copy(flake.baseScale);
+          dummyFlake.updateMatrix();
+          leafFlakesMesh.setMatrixAt(f, dummyFlake.matrix);
+        }
+        leafFlakesMesh.instanceMatrix.needsUpdate = true;
       }
 
       // 3. Animate Ground QR Mosaic Tiles (flush pavers in tree mode -> vibrant mosaic QR code in scan mode)
@@ -743,7 +690,6 @@ export const treeStyle: QRStyleGenerator = {
       for (let i = 0; i < qrTileCount; i++) {
         const mod = qrModules[i];
 
-        // Rise from flush paver (Y = 0.026) to sharp QR module (Y = 0.042)
         const curY = THREE.MathUtils.lerp(0.026, 0.042, qrEase);
         const curScaleY = THREE.MathUtils.lerp(0.2, 1.0, qrEase);
 
@@ -752,7 +698,6 @@ export const treeStyle: QRStyleGenerator = {
         dummyQR.updateMatrix();
         qrTileMesh.setMatrixAt(i, dummyQR.matrix);
 
-        // Interpolate color from cream paver to artistic mosaic green
         const curColor = new THREE.Color().lerpColors(mod.colorTree, mod.colorQR, qrEase);
         qrTileMesh.setColorAt(i, curColor);
       }
