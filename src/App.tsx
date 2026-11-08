@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import confetti from 'canvas-confetti'
 import { ScanGuideModal } from './components/ScanGuideModal'
-import { DeployGuideModal } from './components/DeployGuideModal'
 import type { SeasonKey, StyleKey, ViewMode } from './types'
 import { resolveSeason } from './utils/seasonUtils'
 import { SceneManager } from './engine/SceneManager'
@@ -17,6 +16,7 @@ import {
   ShieldCheck,
   Link2,
   Camera,
+  ExternalLink,
 } from 'lucide-react'
 
 export default function App() {
@@ -33,9 +33,14 @@ export default function App() {
   const [isExporting, setIsExporting] = useState<boolean>(false)
   const [showSettingsDrawer, setShowSettingsDrawer] = useState<boolean>(false)
 
+  // Interactive Settings State
+  const [isAutoRotate, setIsAutoRotate] = useState<boolean>(false)
+  const [isWeatherEnabled, setIsWeatherEnabled] = useState<boolean>(true)
+  const [isCameraLocked, setIsCameraLocked] = useState<boolean>(true)
+  const [exportQuality, setExportQuality] = useState<'1080p' | '2k' | '4k'>('1080p')
+
   // Modals
   const [isScanGuideOpen, setIsScanGuideOpen] = useState<boolean>(false)
-  const [isDeployGuideOpen, setIsDeployGuideOpen] = useState<boolean>(false)
 
   const actualSeason = resolveSeason(selectedSeason)
 
@@ -48,7 +53,7 @@ export default function App() {
       initialUrl: url,
       initialSeason: actualSeason,
       initialStyle: selectedStyle,
-      autoRotate: false, // Locked camera as requested
+      autoRotate: false,
       onViewModeChange: (newMode) => {
         setViewMode(newMode)
         soundEngine.playMorphSound(newMode === 'topDown')
@@ -106,14 +111,21 @@ export default function App() {
 
     setIsExporting(true)
     try {
+      const resMap = {
+        '1080p': 1920,
+        '2k': 2560,
+        '4k': 3840,
+      }
+      const dimension = resMap[exportQuality] || 1920
+
       const dataUrl = await sceneManagerRef.current.exportSnapshot({
-        width: 1920,
-        height: 1920,
+        width: dimension,
+        height: dimension,
         topDown: topDown,
       })
 
       const downloadLink = document.createElement('a')
-      downloadLink.download = `SeasonQR-${actualSeason}-${topDown ? 'scan' : '3d'}-${Date.now()}.png`
+      downloadLink.download = `SeasonQR-${actualSeason}-${topDown ? 'scan' : '3d'}-${exportQuality}-${Date.now()}.png`
       downloadLink.href = dataUrl
       document.body.appendChild(downloadLink)
       downloadLink.click()
@@ -168,26 +180,26 @@ export default function App() {
         return {
           label: 'Xuân Sakura',
           icon: '🌸',
-          color: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-950/60 dark:text-pink-300 dark:border-pink-800',
+          color: 'bg-pink-100 text-pink-800 border-pink-200',
         }
       case 'autumn':
         return {
           label: 'Thu Phong Đỏ',
           icon: '🍁',
-          color: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+          color: 'bg-amber-100 text-amber-800 border-amber-200',
         }
       case 'winter':
         return {
           label: 'Đông Băng Tuyết',
           icon: '❄️',
-          color: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800',
+          color: 'bg-sky-100 text-sky-800 border-sky-200',
         }
       case 'summer':
       default:
         return {
           label: 'Hạ Lục Bảo',
           icon: '☀️',
-          color: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+          color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
         }
     }
   }
@@ -213,17 +225,17 @@ export default function App() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-stone-900 dark:text-white text-lg tracking-tight">
+              <span className="font-black text-stone-900 text-lg tracking-tight">
                 SeasonQR
               </span>
               <span
-                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border shadow-xs ${badge.color}`}
+                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border shadow-xs ${badge.color}`}
               >
                 <span>{badge.icon}</span>
                 <span>{badge.label}</span>
               </span>
             </div>
-            <div className="text-[11px] text-stone-500 dark:text-stone-400 font-medium hidden sm:block">
+            <div className="text-[11px] text-stone-600 font-medium hidden sm:block">
               Trình Tạo Mã QR 3D Nghệ Thuật • 100% Client-side
             </div>
           </div>
@@ -233,38 +245,29 @@ export default function App() {
         <div className="flex items-center gap-2 pointer-events-auto">
           <button
             onClick={() => setIsScanGuideOpen(true)}
-            className="p-2.5 rounded-xl bg-white/80 dark:bg-stone-800/80 hover:bg-white dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white border border-stone-200/80 dark:border-stone-700 shadow-sm transition-all"
+            className="p-2.5 rounded-xl bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition-all active:scale-95"
             title="Mẹo quét mã QR"
           >
             <HelpCircle className="w-4 h-4" />
           </button>
 
           <button
-            onClick={() => setIsDeployGuideOpen(true)}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/80 dark:bg-stone-800/80 hover:bg-white dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 hover:text-stone-900 dark:hover:text-white border border-stone-200/80 dark:border-stone-700 shadow-sm text-xs font-semibold transition-all"
-            title="Hướng dẫn Deploy GitHub Pages miễn phí"
-          >
-            <span>Deploy Free</span>
-          </button>
-
-          <button
             onClick={() => setShowSettingsDrawer(!showSettingsDrawer)}
-            className="p-2.5 rounded-xl bg-white/80 dark:bg-stone-800/80 hover:bg-white dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white border border-stone-200/80 dark:border-stone-700 shadow-sm transition-all"
-            title="Tùy chọn phong cách"
+            className="p-2.5 rounded-xl bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition-all active:scale-95"
+            title="Cài đặt & Tùy chọn"
           >
             <SlidersHorizontal className="w-4 h-4" />
           </button>
 
           <a
-            href="https://github.com/btvdev03/season-qr"
+            href="https://btvdev03.github.io/"
             target="_blank"
             rel="noreferrer"
-            className="p-2.5 rounded-xl bg-white/80 dark:bg-stone-800/80 hover:bg-white dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white border border-stone-200/80 dark:border-stone-700 shadow-sm transition-all"
-            title="Mã nguồn GitHub"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 hover:bg-white text-stone-800 hover:text-stone-900 border border-stone-200/90 shadow-xs text-xs font-bold transition-all hover:scale-105 active:scale-95"
+            title="Xem Portfolio Võ Tấn Bản (btvdev03)"
           >
-            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-            </svg>
+            <ExternalLink className="w-3.5 h-3.5 text-stone-600" />
+            <span>Portfolio</span>
           </a>
         </div>
       </header>
@@ -277,8 +280,8 @@ export default function App() {
       />
 
       {/* 3. FIXED CAMERA & PERFORMANCE BADGE (Bottom Left) */}
-      <div className="fixed bottom-6 left-6 z-20 pointer-events-none hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/75 dark:bg-stone-900/75 backdrop-blur-md border border-stone-200/80 dark:border-stone-800 text-[11px] text-stone-600 dark:text-stone-300 shadow-sm font-medium">
-        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+      <div className="fixed bottom-6 left-6 z-20 pointer-events-none hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-stone-200/80 text-[11px] text-stone-700 shadow-sm font-semibold">
+        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
         <span>Góc nhìn cố định • 60 FPS mượt mà</span>
       </div>
 
@@ -290,16 +293,16 @@ export default function App() {
             setViewMode(nextMode)
             soundEngine.playMorphSound(nextMode === 'topDown')
           }}
-          className="group flex items-center gap-2 px-5 py-2 rounded-full bg-white/85 dark:bg-stone-900/85 hover:bg-white dark:hover:bg-stone-900 text-stone-800 dark:text-stone-200 shadow-md hover:shadow-lg border border-stone-200/80 dark:border-stone-700 backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 text-xs font-semibold"
+          className="group flex items-center gap-2 px-5 py-2 rounded-full bg-white/90 hover:bg-white text-stone-800 shadow-md hover:shadow-lg border border-stone-200/90 backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 text-xs font-bold"
         >
           {viewMode === 'isometric' ? (
             <>
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
               <span>Chạm cây để xem mã QR (Góc quét 90°)</span>
             </>
           ) : (
             <>
-              <RotateCcw className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />
+              <RotateCcw className="w-3.5 h-3.5 text-stone-700" />
               <span>Chạm để quay lại Cây Bốn Mùa 3D</span>
             </>
           )}
@@ -308,13 +311,13 @@ export default function App() {
 
       {/* 5. LUXURY FLOATING ISLAND COMMAND DOCK */}
       <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-lg px-4 pointer-events-auto">
-        <div className="w-full bg-white/85 dark:bg-stone-900/85 backdrop-blur-2xl rounded-3xl p-3 shadow-2xl border border-white/80 dark:border-white/10 flex flex-col gap-2.5 transition-all">
+        <div className="w-full bg-white/90 backdrop-blur-2xl rounded-3xl p-3 shadow-2xl border border-stone-200/80 flex flex-col gap-2.5 transition-all">
           {/* Row 1: Integrated URL Input & Action Cluster */}
           <form
             onSubmit={handleUrlSubmit}
-            className="flex items-center gap-2 bg-stone-100/80 dark:bg-stone-800/80 rounded-2xl p-1.5 border border-stone-200/70 dark:border-stone-700/60 focus-within:border-stone-400 dark:focus-within:border-stone-500 transition-all"
+            className="flex items-center gap-2 bg-stone-100 rounded-2xl p-1.5 border border-stone-200/80 focus-within:border-stone-400 focus-within:bg-white transition-all"
           >
-            <div className="pl-2.5 text-stone-400 dark:text-stone-500">
+            <div className="pl-2.5 text-stone-500">
               <Link2 className="w-4 h-4" />
             </div>
             <input
@@ -323,7 +326,7 @@ export default function App() {
               onChange={(e) => setInputUrl(e.target.value)}
               onBlur={() => handleUrlSubmit()}
               placeholder="Nhập link bất kỳ (https://...)"
-              className="flex-1 min-w-0 bg-transparent text-xs sm:text-sm text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 outline-none font-medium"
+              className="flex-1 min-w-0 bg-transparent text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 outline-none font-semibold"
             />
 
             {/* Quick Action 1: 3D <-> Scan 90deg Mode Toggle */}
@@ -334,16 +337,16 @@ export default function App() {
                 setViewMode(nextMode)
                 soundEngine.playMorphSound(nextMode === 'topDown')
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                 viewMode === 'topDown'
                   ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200 hover:text-stone-900 dark:hover:text-white border border-stone-200/80 dark:border-stone-600 shadow-xs'
+                  : 'bg-white text-stone-800 hover:text-stone-900 border border-stone-200/90 shadow-xs'
               }`}
               title={viewMode === 'isometric' ? 'Chuyển sang góc quét QR 90°' : 'Quay lại góc nhìn 3D Isometric'}
             >
               {viewMode === 'isometric' ? (
                 <>
-                  <Camera className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <Camera className="w-3.5 h-3.5 text-emerald-600" />
                   <span className="hidden sm:inline">Quét 90°</span>
                 </>
               ) : (
@@ -359,8 +362,8 @@ export default function App() {
               type="button"
               onClick={() => handleExport(viewMode === 'topDown')}
               disabled={isExporting}
-              className="p-2 rounded-xl bg-stone-900 dark:bg-stone-100 hover:bg-stone-800 dark:hover:bg-white text-white dark:text-stone-900 shadow-xs transition-all active:scale-95 flex items-center justify-center"
-              title="Tải ảnh QR (HD)"
+              className="p-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white shadow-xs transition-all active:scale-95 flex items-center justify-center"
+              title={`Tải ảnh QR (${exportQuality.toUpperCase()})`}
             >
               {isExporting ? (
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -371,8 +374,8 @@ export default function App() {
           </form>
 
           {/* Row 1.5: Quick Presets */}
-          <div className="flex items-center justify-between px-1 text-[11px] font-medium text-stone-500 dark:text-stone-400">
-            <span className="opacity-70 text-[10px]">Gợi ý nhanh:</span>
+          <div className="flex items-center justify-between px-1 text-[11px] font-semibold text-stone-600">
+            <span className="opacity-75 text-[10px]">Gợi ý nhanh:</span>
             <div className="flex items-center gap-1">
               {[
                 { name: 'SeasonQR', url: 'https://btvdev03.github.io/season-qr/' },
@@ -384,7 +387,7 @@ export default function App() {
                   key={name}
                   type="button"
                   onClick={() => handleQuickPreset(presetUrl)}
-                  className="px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 hover:bg-white dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-700 text-[10px] transition-all"
+                  className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/80 text-[10px] font-semibold transition-all active:scale-95 shadow-2xs"
                 >
                   {name}
                 </button>
@@ -393,7 +396,7 @@ export default function App() {
           </div>
 
           {/* Row 2: 4-Season Segmented Tab Switcher */}
-          <div className="flex items-center justify-between gap-1 p-1 rounded-2xl bg-stone-100/90 dark:bg-stone-800/90 border border-stone-200/80 dark:border-stone-700/80 text-xs font-semibold">
+          <div className="flex items-center justify-between gap-1 p-1 rounded-2xl bg-stone-100 border border-stone-200/80 text-xs font-bold">
             {[
               { id: 'spring', label: 'Xuân', icon: '🌸', activeClass: 'bg-pink-100 text-pink-900 border-pink-300 shadow-xs' },
               { id: 'summer', label: 'Hạ', icon: '☀️', activeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 shadow-xs' },
@@ -408,7 +411,7 @@ export default function App() {
                   className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl border border-transparent transition-all ${
                     isSelected
                       ? s.activeClass
-                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-white/50 dark:hover:bg-stone-700/50'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
                   }`}
                 >
                   <span className="text-xs">{s.icon}</span>
@@ -422,8 +425,8 @@ export default function App() {
               onClick={toggleSound}
               className={`p-1.5 ml-0.5 rounded-xl transition-all ${
                 isMuted
-                  ? 'text-stone-400 hover:text-stone-700 dark:text-stone-500'
-                  : 'text-emerald-700 dark:text-emerald-400 bg-white dark:bg-stone-700 shadow-xs'
+                  ? 'text-stone-400 hover:text-stone-700'
+                  : 'text-emerald-700 bg-white shadow-xs'
               }`}
               title={isMuted ? 'Bật âm thanh thiên nhiên' : 'Tắt âm thanh'}
             >
@@ -433,98 +436,201 @@ export default function App() {
         </div>
       </div>
 
-      {/* 6. SLIDE-OVER SETTINGS DRAWER */}
+      {/* 6. SLIDE-OVER SETTINGS DRAWER (100% Functional) */}
       {showSettingsDrawer && (
-        <div className="fixed inset-0 z-40 flex justify-end bg-black/20 backdrop-blur-xs">
+        <div className="fixed inset-0 z-40 flex justify-end bg-black/25 backdrop-blur-xs">
           <div
             className="absolute inset-0"
             onClick={() => setShowSettingsDrawer(false)}
           />
-          <div className="relative w-full max-w-xs h-full bg-white dark:bg-stone-900 shadow-2xl p-6 flex flex-col justify-between overflow-y-auto z-10 border-l border-stone-200 dark:border-stone-800">
+          <div className="relative w-full max-w-sm h-full bg-white shadow-2xl p-6 flex flex-col justify-between overflow-y-auto z-10 border-l border-stone-200">
             <div className="space-y-6">
-              <div className="flex items-center justify-between pb-3 border-b border-stone-200 dark:border-stone-800">
-                <h3 className="font-bold text-stone-800 dark:text-white text-sm">Cài Đặt & Kiểu Dáng</h3>
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 text-emerald-600" />
+                  <h3 className="font-extrabold text-stone-900 text-sm">Cài Đặt & Kiểu Dáng</h3>
+                </div>
                 <button
                   onClick={() => setShowSettingsDrawer(false)}
-                  className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800"
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors font-bold"
                 >
                   ✕
                 </button>
               </div>
 
-              {/* Style Selector */}
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-stone-600 dark:text-stone-400">Phong cách 3D:</label>
+              {/* Setting 1: 3D Diorama Style Selection */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
+                  Phong Cách Diorama 3D
+                </label>
                 <div className="grid grid-cols-1 gap-2">
-                  <button
-                    onClick={() => setSelectedStyle('tree')}
-                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-                      selectedStyle === 'tree'
-                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200'
-                        : 'border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800/50 text-stone-700 dark:text-stone-300'
-                    }`}
-                  >
-                    <span className="text-xl">🌳</span>
-                    <div>
-                      <div className="text-xs font-bold">Cây Sồi 3D Chân Thực</div>
-                      <div className="text-[10px] text-stone-500 dark:text-stone-400">Tán lá rực rỡ theo mùa, cành nhánh PBR & biến hình mã QR</div>
-                    </div>
-                  </button>
+                  {[
+                    {
+                      id: 'tree',
+                      name: 'Cây Sồi 3D Chân Thực',
+                      desc: 'Tán lá rực rỡ theo mùa, cành nhánh PBR, vườn cỏ & rễ cây ôm gốc',
+                      icon: '🌳',
+                    },
+                    {
+                      id: 'island',
+                      name: 'Đảo Voxel Bồng Bềnh',
+                      desc: 'Đảo nổi huyền thoại với nhũ đá nhọn và rễ cây buông rủ đáy vực',
+                      icon: '🏝️',
+                    },
+                    {
+                      id: 'zen',
+                      name: 'Vườn Đá Zen Karesansui',
+                      desc: 'Đèn đá Toro phát sáng, đá thiêng San-zon-seki và sỏi thiền tĩnh lặng',
+                      icon: '⛩️',
+                    },
+                  ].map((style) => (
+                    <button
+                      key={style.id}
+                      onClick={() => setSelectedStyle(style.id as StyleKey)}
+                      className={`flex items-start gap-3 p-3 rounded-2xl border text-left transition-all ${
+                        selectedStyle === style.id
+                          ? 'border-emerald-500 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-500/20 shadow-xs'
+                          : 'border-stone-200 hover:bg-stone-50 text-stone-800'
+                      }`}
+                    >
+                      <span className="text-2xl mt-0.5">{style.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-stone-900">{style.name}</div>
+                        <div className="text-[11px] text-stone-500 leading-snug mt-0.5">{style.desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                  <button
-                    onClick={() => setSelectedStyle('island')}
-                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-                      selectedStyle === 'island'
-                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200'
-                        : 'border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800/50 text-stone-700 dark:text-stone-300'
-                    }`}
-                  >
-                    <span className="text-xl">🏝️</span>
-                    <div>
-                      <div className="text-xs font-bold">Đảo Voxel Bồng Bềnh</div>
-                      <div className="text-[10px] text-stone-500 dark:text-stone-400">Đảo bay lơ lửng với nhũ đá bên dưới</div>
-                    </div>
-                  </button>
+              {/* Setting 2: Camera & Interaction Controls */}
+              <div className="space-y-2.5 pt-2 border-t border-stone-200">
+                <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
+                  Tương Tác & Camera
+                </label>
 
+                {/* Auto Rotate Toggle */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-stone-800">Tự động xoay 360°</div>
+                    <div className="text-[10px] text-stone-500">Xoay chậm nhẹ nhàng để ngắm toàn cảnh diorama</div>
+                  </div>
                   <button
-                    onClick={() => setSelectedStyle('zen')}
-                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-                      selectedStyle === 'zen'
-                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200'
-                        : 'border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800/50 text-stone-700 dark:text-stone-300'
+                    onClick={() => {
+                      const next = !isAutoRotate
+                      setIsAutoRotate(next)
+                      sceneManagerRef.current?.setAutoRotate(next)
+                    }}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                      isAutoRotate ? 'bg-emerald-600 justify-end' : 'bg-stone-300 justify-start'
                     }`}
                   >
-                    <span className="text-xl">⛩️</span>
-                    <div>
-                      <div className="text-xs font-bold">Vườn Đá Zen</div>
-                      <div className="text-[10px] text-stone-500 dark:text-stone-400">Đèn đá Toro và cổng Torii Nhật Bản</div>
-                    </div>
+                    <div className="bg-white w-4 h-4 rounded-full shadow-md" />
+                  </button>
+                </div>
+
+                {/* Weather Particles Toggle */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-stone-800">Hiệu ứng thời tiết</div>
+                    <div className="text-[10px] text-stone-500">Cánh hoa đào, đom đóm, lá phong, tuyết rơi</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const next = !isWeatherEnabled
+                      setIsWeatherEnabled(next)
+                      sceneManagerRef.current?.setWeatherEnabled(next)
+                    }}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                      isWeatherEnabled ? 'bg-emerald-600 justify-end' : 'bg-stone-300 justify-start'
+                    }`}
+                  >
+                    <div className="bg-white w-4 h-4 rounded-full shadow-md" />
+                  </button>
+                </div>
+
+                {/* Camera Rotation Lock Toggle */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-stone-800">Khóa góc camera chuẩn</div>
+                    <div className="text-[10px] text-stone-500">Góc cố định mượt mà 60 FPS không trôi góc</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const next = !isCameraLocked
+                      setIsCameraLocked(next)
+                      sceneManagerRef.current?.setCameraRotationLock(next)
+                    }}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                      isCameraLocked ? 'bg-emerald-600 justify-end' : 'bg-stone-300 justify-start'
+                    }`}
+                  >
+                    <div className="bg-white w-4 h-4 rounded-full shadow-md" />
                   </button>
                 </div>
               </div>
 
-              {/* Extra Actions */}
-              <div className="space-y-3 pt-3 border-t border-stone-200 dark:border-stone-800">
-                <button
-                  onClick={() => handleExport(false)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-stone-900 dark:bg-stone-100 hover:bg-stone-800 dark:hover:bg-white text-white dark:text-stone-900 text-xs font-semibold shadow-sm transition-all"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Tải ảnh 3D Isometric (HD)</span>
-                </button>
+              {/* Setting 3: Export Resolution */}
+              <div className="space-y-2.5 pt-2 border-t border-stone-200">
+                <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
+                  Độ Phân Giải Tải Ảnh
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: '1080p', label: '1080p', desc: '1920px' },
+                    { id: '2k', label: '2K QHD', desc: '2560px' },
+                    { id: '4k', label: '4K Ultra', desc: '3840px' },
+                  ].map((res) => (
+                    <button
+                      key={res.id}
+                      onClick={() => setExportQuality(res.id as '1080p' | '2k' | '4k')}
+                      className={`p-2 rounded-xl border text-center transition-all ${
+                        exportQuality === res.id
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold'
+                          : 'border-stone-200 hover:bg-stone-50 text-stone-700 font-medium'
+                      }`}
+                    >
+                      <div className="text-xs">{res.label}</div>
+                      <div className="text-[10px] text-stone-400">{res.desc}</div>
+                    </button>
+                  ))}
+                </div>
 
-                <button
-                  onClick={() => handleExport(true)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-all"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Tải mã QR Top-Down (Dành để in/quét)</span>
-                </button>
+                <div className="grid grid-cols-1 gap-2 pt-1">
+                  <button
+                    onClick={() => handleExport(false)}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold shadow-xs transition-all active:scale-95"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Tải ảnh 3D Isometric ({exportQuality.toUpperCase()})</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleExport(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all active:scale-95"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Tải mã QR 90° Quét Ngay ({exportQuality.toUpperCase()})</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-stone-200 dark:border-stone-800 text-[11px] text-stone-500 dark:text-stone-400 text-center">
-              SeasonQR • 100% Client-side & Free
+            {/* Drawer Footer */}
+            <div className="pt-4 border-t border-stone-200 text-[11px] text-stone-500 text-center space-y-1">
+              <div>SeasonQR • 100% Client-side Engine</div>
+              <div>
+                Tác giả:{' '}
+                <a
+                  href="https://btvdev03.github.io/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-emerald-700 font-bold underline hover:text-emerald-800"
+                >
+                  Võ Tấn Bản (btvdev03)
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -535,11 +641,6 @@ export default function App() {
         isOpen={isScanGuideOpen}
         onClose={() => setIsScanGuideOpen(false)}
         onSwitchToTopDown={() => setViewMode('topDown')}
-      />
-
-      <DeployGuideModal
-        isOpen={isDeployGuideOpen}
-        onClose={() => setIsDeployGuideOpen(false)}
       />
     </main>
   )

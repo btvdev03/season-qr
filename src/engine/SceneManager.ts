@@ -455,6 +455,31 @@ export class SceneManager {
   }
 
   /**
+   * Toggles falling weather particles (petals, leaves, snow)
+   */
+  public setWeatherEnabled(enabled: boolean): void {
+    if (this.particles) {
+      this.particles.group.visible = enabled;
+    }
+  }
+
+  public getWeatherEnabled(): boolean {
+    return this.particles ? this.particles.group.visible : true;
+  }
+
+  /**
+   * Toggles fixed vs free OrbitControls camera rotation
+   */
+  public setCameraRotationLock(locked: boolean): void {
+    this.controls.enableRotate = !locked;
+    this.controls.enableZoom = !locked;
+  }
+
+  public getCameraRotationLock(): boolean {
+    return !this.controls.enableRotate;
+  }
+
+  /**
    * Captures a high-resolution snapshot PNG Data URL.
    * If options.topDown is true, snaps top-down with 100% unblocked QR base.
    */

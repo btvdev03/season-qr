@@ -47,11 +47,11 @@ const RAMPS = {
     { pos: 1.0, color: '#86efac' }  // Luminous leaf crest highlight
   ],
   spring: [
-    { pos: 0.0, color: '#4c0519' }, // Dark cherry bark shadow
-    { pos: 0.25, color: '#9d174d' }, // Deep rose magenta
-    { pos: 0.52, color: '#ec4899' }, // Vibrant Sakura blossom pink
-    { pos: 0.8, color: '#fbcfe8' }, // Soft delicate petal
-    { pos: 1.0, color: '#fff5f7' }  // Pure white blossom tip
+    { pos: 0.0, color: '#9f1239' }, // Warm rose shadow
+    { pos: 0.2, color: '#f43f5e' }, // Vivid blossom rose
+    { pos: 0.45, color: '#f472b6' }, // True Sakura cherry blossom pink
+    { pos: 0.72, color: '#fbcfe8' }, // Soft delicate petal
+    { pos: 1.0, color: '#fff5f8' }  // Pure white blossom tip
   ],
   autumn: [
     { pos: 0.0, color: '#3d0a0a' }, // Deep mahogany shadow
@@ -66,13 +66,6 @@ const RAMPS = {
     { pos: 0.55, color: '#0284c7' }, // Crisp glacier blue
     { pos: 0.8, color: '#7dd3fc' }, // Bright frost ice
     { pos: 1.0, color: '#ffffff' }  // Pure powdery snow
-  ],
-  cyberpunk: [
-    { pos: 0.0, color: '#17062e' }, // Void violet
-    { pos: 0.25, color: '#86198f' }, // Deep neon purple
-    { pos: 0.55, color: '#f43f5e' }, // Hot neon magenta
-    { pos: 0.8, color: '#06b6d4' }, // High-voltage cyan
-    { pos: 1.0, color: '#00f5ff' }  // Laser cyan highlight
   ]
 };
 
