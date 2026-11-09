@@ -61,6 +61,7 @@ export default function App() {
     })
 
     sceneManagerRef.current = manager
+    ;(window as any).__sceneManager = manager
 
     return () => {
       manager.dispose()

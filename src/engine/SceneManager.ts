@@ -93,8 +93,9 @@ export class SceneManager {
   // Setting camera target to +3.2 along Z shifts the diorama upward in screen space
   // (centering QR slab at y=+0.189, bottom edge at y=-0.521), framing the 24-unit slab
   // comfortably in the upper/middle viewport with generous padding and 0% occlusion by the bottom dock.
-  private readonly SCAN_POS = new THREE.Vector3(0, 44, 3.2 + 0.0001);
-  private readonly SCAN_TARGET = new THREE.Vector3(0, 0, 3.2);
+  // Zero-keystone orthogonal optical axis centered directly on QR code (0, 0, 0)
+  private readonly SCAN_POS = new THREE.Vector3(0, 44, 0.0001);
+  private readonly SCAN_TARGET = new THREE.Vector3(0, 0, 0);
   private readonly SCAN_UP = new THREE.Vector3(0, 0, -1); // Up vector makes QR orientation upright
 
   constructor(config: SceneManagerConfig) {
@@ -328,12 +329,12 @@ export class SceneManager {
       this.sunLight.castShadow = this.scanModeProgress < 0.4;
       this.ambientLight.intensity = THREE.MathUtils.lerp(
         this.currentSeason.lighting.ambientIntensity,
-        1.12,
+        1.35,
         this.scanModeProgress
       );
       this.sunLight.intensity = THREE.MathUtils.lerp(
         this.currentSeason.lighting.sunIntensity,
-        0.45,
+        0.05,
         this.scanModeProgress
       );
     } else {
@@ -374,7 +375,7 @@ export class SceneManager {
    * Smoothly animates between Isometric 3D View and Top-Down 100% Scannable View
    */
   public setViewMode(mode: ViewMode, animate: boolean = true): void {
-    if (this.viewMode === mode && !this.isTransitioning) return;
+    if (this.viewMode === mode) return;
     this.viewMode = mode;
     this.onViewModeChange?.(mode);
 
@@ -564,7 +565,6 @@ export class SceneManager {
         .lerpVectors(this.startCamUp, this.destCamUp, ease)
         .normalize();
       this.camera.lookAt(this.controls.target);
-      this.controls.update();
 
       // Morph decor scale & shadow
       this.scanModeProgress = THREE.MathUtils.lerp(
@@ -576,11 +576,17 @@ export class SceneManager {
 
       if (t >= 1) {
         this.isTransitioning = false;
+        this.camera.position.copy(this.destCamPos);
+        this.controls.target.copy(this.destCamTarget);
+        this.camera.up.copy(this.destCamUp);
+        this.camera.lookAt(this.destCamTarget);
         this.scanModeProgress = this.scanModeTarget;
         this.applyScanModeDecor();
       }
     } else {
-      this.controls.update();
+      if (this.controls.enabled && this.controls.enableRotate) {
+        this.controls.update();
+      }
       // Only tick real-time wind physics in 3D mode (avoiding redundant state recalculations)
       if (this.scanModeProgress < 0.95 && this.styleGroup) {
         const morphable = this.styleGroup as { updateMorph?: (p: number, time?: number) => void } | null;
