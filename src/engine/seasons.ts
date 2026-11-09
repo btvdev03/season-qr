@@ -128,10 +128,10 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
   spring: {
     id: 'spring',
     name: 'Spring Blossom',
-    vietnameseName: 'Xuân Hoa Anh Đào',
+    vietnameseName: 'Xuân Đào Mai',
     icon: '🌸',
-    description: 'Delicate pink Sakura cherry blossoms drifting in the spring breeze on fresh stone ground.',
-    vietnameseDescription: 'Cánh hoa anh đào phớt hồng rơi nhẹ trong gió xuân trên phiến đá cổ kính.',
+    description: 'Fresh peach blossoms and golden apricots welcoming the traditional Lunar New Year.',
+    vietnameseDescription: 'Hoa đào phớt hồng miền Bắc quyện sắc mai vàng phương Nam, chồi non lộc biếc đón Tết cổ truyền.',
     ground: {
       darkModule: '#1a0d18', // Deep cherry charcoal for maximum scan contrast
       lightModule: '#fff5f7', // Pale sakura snow
@@ -141,10 +141,10 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       finderLight: '#ffffff',
     },
     foliage: {
-      primary: '#ff85a1', // Sakura cherry pink
+      primary: '#ff85a1', // Peach blossom pink
       secondary: '#ffc5d3', // Light blossom
       accent: '#fff5f7', // Pure white blossom tips
-      subAccent: '#ffe66d', // Golden flower pollen stamen
+      subAccent: '#ffe66d', // Golden apricot stamen
     },
     structure: {
       trunkPrimary: '#3e2723', // Warm cherry bark
@@ -177,10 +177,10 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
   summer: {
     id: 'summer',
     name: 'Summer Grove',
-    vietnameseName: 'Hạ Rực Rỡ',
+    vietnameseName: 'Hạ Phượng Vĩ',
     icon: '☀️',
-    description: 'Vibrant emerald canopy buzzing with golden sunbeams, ripe fruits, and warm fireflies.',
-    vietnameseDescription: 'Tán lá ngọc lục bảo rợp bóng dưới nắng vàng, quả chín mọng và đom đóm.',
+    description: 'Vibrant tropical shade canopy with blooming royal poinciana and fragrant lotus ponds.',
+    vietnameseDescription: 'Tán lá rợp bóng mát, sắc phượng vĩ bừng sáng và đầm sen ngát hương dưới nắng hè nhiệt đới.',
     ground: {
       darkModule: '#092314', // Deep evergreen black for sharp scan
       lightModule: '#fdfbf4', // Clean warm ivory
@@ -192,8 +192,8 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
     foliage: {
       primary: '#16a34a', // Lush emerald green
       secondary: '#22c55e', // Bright sunlight leaves
-      accent: '#facc15', // Ripe golden summer fruit
-      subAccent: '#ef4444', // Sweet ruby berries
+      accent: '#facc15', // Golden summer sun
+      subAccent: '#ef4444', // Royal poinciana red
     },
     structure: {
       trunkPrimary: '#3d2b18',
@@ -226,10 +226,10 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
   autumn: {
     id: 'autumn',
     name: 'Autumn Gold',
-    vietnameseName: 'Thu Lá Đỏ',
+    vietnameseName: 'Thu Cúc Vàng',
     icon: '🍁',
-    description: 'Fiery red and golden maple canopy with crisp leaves gently tumbling over rustic earth.',
-    vietnameseDescription: 'Sắc lá phong đỏ rực quyện vàng ấm áp, lá thu lượn bay trên nền đất cổ kính.',
+    description: 'Golden Hanoi autumn atmosphere with crisp breezes, milk flowers, and yellow chrysanthemums.',
+    vietnameseDescription: 'Nắng thu hanh vàng, gió heo may se lạnh, hương hoa sữa nồng nàn cùng sắc cúc vàng rực rỡ.',
     ground: {
       darkModule: '#1f1008', // Deep espresso mahogany (high contrast!)
       lightModule: '#fdf9f2', // Warm parchment white
@@ -239,9 +239,9 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       finderLight: '#ffffff',
     },
     foliage: {
-      primary: '#dc2626', // Flaming Kyoto maple red
-      secondary: '#ea580c', // Deep autumn orange
-      accent: '#f59e0b', // Bright golden amber
+      primary: '#dc2626', // Warm autumn red
+      secondary: '#ea580c', // Glowing orange
+      accent: '#f59e0b', // Chrysanthemum yellow
       subAccent: '#b91c1c',
     },
     structure: {
@@ -275,10 +275,10 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
   winter: {
     id: 'winter',
     name: 'Winter Frost',
-    vietnameseName: 'Đông Băng Giá',
+    vietnameseName: 'Đông Sa Pa',
     icon: '❄️',
-    description: 'Crystalline snow-covered pine needles under a soft northern sky with drifting snowflakes.',
-    vietnameseDescription: 'Tuyết trắng phủ cành thông băng giá dưới bầu trời phương Bắc tĩnh lặng.',
+    description: 'Pristine frosty northern mountains of Sa Pa and Fansipan with misty clouds and pine trees.',
+    vietnameseDescription: 'Băng tuyết trắng tinh khôi đỉnh Fansipan, sương mờ bảng lảng qua rặng thông đại ngàn Sa Pa.',
     ground: {
       darkModule: '#0c152a', // Deep midnight slate blue (high contrast!)
       lightModule: '#f8fafc', // Crisp snow white

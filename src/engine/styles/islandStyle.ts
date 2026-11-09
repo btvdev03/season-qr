@@ -14,11 +14,11 @@ import { buildQRBase } from './baseQRBuilder';
 
 export const islandStyle: QRStyleGenerator = {
   id: 'island',
-  name: 'Floating Voxel Island',
-  vietnameseName: 'Đảo Nổi Bồng Bềnh',
+  name: 'Đảo Ngọc Non Nước Việt',
+  vietnameseName: 'Đảo Ngọc Non Nước',
   icon: '🏝️',
   description: 'A mystical floating island hovering in midair with stalactites and dangling roots.',
-  vietnameseDescription: 'Hòn đảo thần thoại trôi lơ lửng giữa không trung với rễ cây cổ thụ rủ xuống đáy vực.',
+  vietnameseDescription: 'Kỳ quan đảo nổi bồng bềnh non nước Việt Nam với nhũ đá kỳ vĩ và rễ cây buông rủ.',
 
   generate(params: StyleGenerateParams): THREE.Group {
     const { matrix, season, sceneSize = 24 } = params;

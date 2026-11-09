@@ -178,26 +178,26 @@ export default function App() {
     switch (actualSeason) {
       case 'spring':
         return {
-          label: 'Xuân Sakura',
+          label: 'Xuân Đào Mai',
           icon: '🌸',
           color: 'bg-pink-100 text-pink-800 border-pink-200',
         }
       case 'autumn':
         return {
-          label: 'Thu Phong Đỏ',
+          label: 'Thu Cúc Vàng',
           icon: '🍁',
           color: 'bg-amber-100 text-amber-800 border-amber-200',
         }
       case 'winter':
         return {
-          label: 'Đông Băng Tuyết',
+          label: 'Đông Sa Pa',
           icon: '❄️',
           color: 'bg-sky-100 text-sky-800 border-sky-200',
         }
       case 'summer':
       default:
         return {
-          label: 'Hạ Lục Bảo',
+          label: 'Hạ Phượng Vĩ',
           icon: '☀️',
           color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
         }
@@ -236,7 +236,7 @@ export default function App() {
               </span>
             </div>
             <div className="text-[11px] text-stone-600 font-medium hidden sm:block">
-              Trình Tạo Mã QR 3D Nghệ Thuật • 100% Client-side
+              Trình Tạo Mã QR 3D Nghệ Thuật 4 Mùa Việt Nam • 100% Client-side
             </div>
           </div>
         </div>
@@ -325,7 +325,7 @@ export default function App() {
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               onBlur={() => handleUrlSubmit()}
-              placeholder="Nhập link bất kỳ (https://...)"
+              placeholder="Nhập link bất kỳ: Zalo, Facebook, VietQR, Website (https://...)"
               className="flex-1 min-w-0 bg-transparent text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 outline-none font-semibold"
             />
 
@@ -378,10 +378,10 @@ export default function App() {
             <span className="opacity-75 text-[10px]">Gợi ý nhanh:</span>
             <div className="flex items-center gap-1">
               {[
-                { name: 'SeasonQR', url: 'https://btvdev03.github.io/season-qr/' },
-                { name: 'GitHub Repo', url: 'https://github.com/btvdev03/season-qr' },
-                { name: 'Profile', url: 'https://github.com/btvdev03' },
+                { name: 'Zalo', url: 'https://zalo.me/' },
+                { name: 'Facebook', url: 'https://facebook.com/' },
                 { name: 'Portfolio', url: 'https://btvdev03.github.io/' },
+                { name: 'Dự Án GitHub', url: 'https://github.com/btvdev03/season-qr' },
               ].map(({ name, url: presetUrl }) => (
                 <button
                   key={name}
@@ -468,20 +468,20 @@ export default function App() {
                   {[
                     {
                       id: 'tree',
-                      name: 'Cây Sồi 3D Chân Thực',
-                      desc: 'Tán lá rực rỡ theo mùa, cành nhánh PBR, vườn cỏ & rễ cây ôm gốc',
+                      name: 'Cây Bonsai Cổ Thụ 4 Mùa',
+                      desc: 'Tán lá 4 mùa Việt Nam, cành nhánh PBR, vườn cỏ hoa dại & rêu phong ôm gốc',
                       icon: '🌳',
                     },
                     {
                       id: 'island',
-                      name: 'Đảo Voxel Bồng Bềnh',
-                      desc: 'Đảo nổi huyền thoại với nhũ đá nhọn và rễ cây buông rủ đáy vực',
+                      name: 'Đảo Ngọc Non Nước',
+                      desc: 'Kỳ quan đảo nổi bồng bềnh non nước Việt Nam với nhũ đá kỳ vĩ & rễ cây buông rủ',
                       icon: '🏝️',
                     },
                     {
                       id: 'zen',
-                      name: 'Vườn Đá Zen Karesansui',
-                      desc: 'Đèn đá Toro phát sáng, đá thiêng San-zon-seki và sỏi thiền tĩnh lặng',
+                      name: 'Vườn Thiền Non Bộ',
+                      desc: 'Nghệ thuật hòn non bộ cổ kính, đèn đá tỏa sáng và sỏi thiền tĩnh tại',
                       icon: '⛩️',
                     },
                   ].map((style) => (
@@ -619,7 +619,7 @@ export default function App() {
 
             {/* Drawer Footer */}
             <div className="pt-4 border-t border-stone-200 text-[11px] text-stone-500 text-center space-y-1">
-              <div>SeasonQR • 100% Client-side Engine</div>
+              <div>SeasonQR • Trình tạo mã QR 3D nghệ thuật Việt Nam</div>
               <div>
                 Tác giả:{' '}
                 <a

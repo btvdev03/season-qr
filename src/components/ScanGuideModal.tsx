@@ -69,9 +69,9 @@ export const ScanGuideModal: React.FC<ScanGuideModalProps> = ({
                 1
               </div>
               <div>
-                <span className="font-medium text-slate-100">Dùng Chế độ Quét (Top-Down):</span>
+                <span className="font-medium text-slate-100">Dùng Chế độ Quét 90° (Top-Down):</span>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Bấm nút <strong>"📱 Chế độ Quét"</strong> trên thanh điều khiển. Camera sẽ căn thẳng góc 90° từ trên xuống, giúp camera điện thoại nhận diện mã ngay trong 0.2 giây!
+                  Bấm nút <strong>"📷 Quét 90°"</strong> trên thanh điều khiển. Toàn bộ cây và cỏ hoa sẽ chìm xuống, camera căn thẳng 90° giúp <strong>Zalo, Camera điện thoại (iPhone/Android) và App Ngân hàng</strong> nhận diện ngay trong 0.1 giây!
                 </p>
               </div>
             </div>
@@ -81,9 +81,9 @@ export const ScanGuideModal: React.FC<ScanGuideModalProps> = ({
                 2
               </div>
               <div>
-                <span className="font-medium text-slate-100">Khoảng cách & Ánh sáng:</span>
+                <span className="font-medium text-slate-100">Quét bằng Zalo & App Ngân Hàng (VietQR):</span>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Giữ điện thoại cách màn hình khoảng 20 - 35 cm. Tránh để chói lóa ánh đèn trực tiếp lên bề mặt màn hình.
+                  Mở ứng dụng <strong>Zalo</strong> bấm vào biểu tượng QR ở góc trên, hoặc dùng <strong>App Ngân hàng</strong> (Vietcombank, MB, Techcombank, MoMo...) quét trực tiếp cực nhanh.
                 </p>
               </div>
             </div>
@@ -93,9 +93,9 @@ export const ScanGuideModal: React.FC<ScanGuideModalProps> = ({
                 3
               </div>
               <div>
-                <span className="font-medium text-slate-100">Góc 3D Isometric nghệ thuật:</span>
+                <span className="font-medium text-slate-100">Khoảng cách & Góc nghiêng 3D:</span>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Khi để góc nghiêng 3D, hãy nghiêng nhẹ điện thoại cùng chiều góc chiếu để camera iPhone / Android bắt được các góc định vị (Finder Patterns).
+                  Để điện thoại cách màn hình khoảng 20 - 35 cm. Ở góc nghiêng 3D, hãy nghiêng nhẹ điện thoại theo góc diorama để camera dễ dàng bắt trọn 3 mắt vuông định vị (Finder Patterns).
                 </p>
               </div>
             </div>

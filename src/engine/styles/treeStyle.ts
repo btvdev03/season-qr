@@ -317,11 +317,11 @@ function createMossMoundGeometry(radius: number, heightRatio = 0.35): THREE.Buff
 
 export const treeStyle: QRStyleGenerator = {
   id: 'tree',
-  name: 'Realistic Oak Tree & Voxel Patio',
-  vietnameseName: 'Cây Sồi 3D Chân Thực & Sân Voxel',
+  name: 'Bonsai 4 Mùa Cổ Thụ & Sân Voxel',
+  vietnameseName: 'Cây Bonsai Cổ Thụ 4 Mùa',
   icon: '🌳',
-  description: 'A realistic 3D oak tree with procedural branching limbs, PBR bark, and dense foliage cards.',
-  vietnameseDescription: 'Cây sồi 3D chân thực với cành nhánh uốn lượn, vỏ cây PBR và tán lá dày đặc.',
+  description: 'An authentic 4-season bonsai tree with natural branching, PBR bark, and dense foliage cards.',
+  vietnameseDescription: 'Cây cổ thụ 4 mùa Việt Nam, cành uốn lượn, vỏ cây PBR, vườn cỏ hoa dại và rêu phong ôm gốc rễ.',
 
   generate(params: StyleGenerateParams): THREE.Group {
     const { matrix, season, sceneSize = 24 } = params;

@@ -15,11 +15,11 @@ import { buildQRBase } from './baseQRBuilder';
 
 export const zenStyle: QRStyleGenerator = {
   id: 'zen',
-  name: 'Zen Garden Sanctuary',
-  vietnameseName: 'Vườn Thiền Thanh Tịnh',
+  name: 'Vườn Thiền Non Bộ',
+  vietnameseName: 'Vườn Thiền Non Bộ',
   icon: '🪨',
-  description: 'A peaceful Japanese Zen rock garden with a glowing stone lantern, bonsai, and sacred rocks.',
-  vietnameseDescription: 'Khu vườn thiền Karesansui tĩnh tại với đèn đá phát sáng, cây tùng thế và đá thiêng.',
+  description: 'A peaceful Vietnamese Zen rock garden with glowing stone lanterns, bonsai, and sacred rocks.',
+  vietnameseDescription: 'Nghệ thuật hòn non bộ cổ kính Việt Nam với đèn đá phát sáng, cây tùng thế và sỏi thiền tĩnh tại.',
 
   generate(params: StyleGenerateParams): THREE.Group {
     const { matrix, season, sceneSize = 24 } = params;
