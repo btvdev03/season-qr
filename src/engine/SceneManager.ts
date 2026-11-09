@@ -82,21 +82,38 @@ export class SceneManager {
   private destCamTarget = new THREE.Vector3();
   private destCamUp = new THREE.Vector3();
 
-  // Presets
-  private readonly ISO_POS = new THREE.Vector3(22, 16, 22);
+  // Presets & Dynamic Responsive Framing
   private readonly ISO_TARGET = new THREE.Vector3(0, 5.5, 0);
   private readonly ISO_UP = new THREE.Vector3(0, 1, 0);
-
-  // Framing in Scan Mode:
-  // In scan mode (viewMode === 'topDown'), the floating dock sits at the bottom (~140px).
-  // Because SCAN_UP is (0, 0, -1), negative Z corresponds to UP on the screen.
-  // Setting camera target to +3.2 along Z shifts the diorama upward in screen space
-  // (centering QR slab at y=+0.189, bottom edge at y=-0.521), framing the 24-unit slab
-  // comfortably in the upper/middle viewport with generous padding and 0% occlusion by the bottom dock.
-  // Zero-keystone orthogonal optical axis centered directly on QR code (0, 0, 0)
-  private readonly SCAN_POS = new THREE.Vector3(0, 44, 0.0001);
   private readonly SCAN_TARGET = new THREE.Vector3(0, 0, 0);
   private readonly SCAN_UP = new THREE.Vector3(0, 0, -1); // Up vector makes QR orientation upright
+
+  /**
+   * Calculates the exact orthogonal camera height needed to frame the QR patio
+   * with generous ISO/IEC quiet margin across any screen aspect ratio (mobile, tablet, desktop),
+   * ensuring zero overlap with top navigation or bottom command docks.
+   */
+  public getScanCameraPos(): THREE.Vector3 {
+    const aspect = this.getContainerAspect();
+    const vFovRad = (this.camera.fov * Math.PI) / 180;
+    const tanHalf = Math.tan(vFovRad / 2);
+    // In mobile portrait (aspect < 1), width is the primary constraint (44 units with margins).
+    // In desktop / square (aspect >= 1), height is the constraint, and top header + bottom dock require ~56 units framing.
+    const requiredYForWidth = 44 / (2 * tanHalf * aspect);
+    const requiredYForHeight = 56 / (2 * tanHalf);
+    const requiredY = Math.max(requiredYForWidth, requiredYForHeight);
+    return new THREE.Vector3(0, requiredY, 0.0001);
+  }
+
+  /**
+   * Dynamically frames the 3D isometric diorama island so mobile portrait screens
+   * do not clip the tree foliage or meadow boundaries.
+   */
+  public getIsoCameraPos(): THREE.Vector3 {
+    const aspect = this.getContainerAspect();
+    const isoMultiplier = THREE.MathUtils.clamp(1.0 / Math.pow(Math.min(1.0, aspect), 0.75), 1.0, 2.2);
+    return new THREE.Vector3(22 * isoMultiplier, 16 * isoMultiplier, 22 * isoMultiplier);
+  }
 
   constructor(config: SceneManagerConfig) {
     this.container = config.container;
@@ -112,7 +129,7 @@ export class SceneManager {
     // 2. Setup Camera
     const aspect = this.getContainerAspect();
     this.camera = new THREE.PerspectiveCamera(42, aspect, 0.1, 1000);
-    this.camera.position.copy(this.ISO_POS);
+    this.camera.position.copy(this.getIsoCameraPos());
     this.camera.up.copy(this.ISO_UP);
     this.camera.lookAt(this.ISO_TARGET);
 
@@ -241,6 +258,15 @@ export class SceneManager {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
+
+    if (!this.isTransitioning) {
+      if (this.viewMode === 'topDown') {
+        this.camera.position.copy(this.getScanCameraPos());
+        this.controls.target.copy(this.SCAN_TARGET);
+        this.camera.up.copy(this.SCAN_UP);
+        this.camera.lookAt(this.SCAN_TARGET);
+      }
+    }
   }
 
   /**
@@ -379,7 +405,7 @@ export class SceneManager {
     this.viewMode = mode;
     this.onViewModeChange?.(mode);
 
-    const targetPos = mode === 'topDown' ? this.SCAN_POS : this.ISO_POS;
+    const targetPos = mode === 'topDown' ? this.getScanCameraPos() : this.getIsoCameraPos();
     const targetLook = mode === 'topDown' ? this.SCAN_TARGET : this.ISO_TARGET;
     const targetUp = mode === 'topDown' ? this.SCAN_UP : this.ISO_UP;
 
@@ -436,7 +462,7 @@ export class SceneManager {
    * Resets camera back to default angle for the current view mode
    */
   public resetCamera(): void {
-    const targetPos = this.viewMode === 'topDown' ? this.SCAN_POS : this.ISO_POS;
+    const targetPos = this.viewMode === 'topDown' ? this.getScanCameraPos() : this.getIsoCameraPos();
     const targetLook = this.viewMode === 'topDown' ? this.SCAN_TARGET : this.ISO_TARGET;
     const targetUp = this.viewMode === 'topDown' ? this.SCAN_UP : this.ISO_UP;
 
@@ -510,7 +536,8 @@ export class SceneManager {
     if (renderTopDown) {
       this.scanModeProgress = 1;
       this.applyScanModeDecor();
-      this.camera.position.set(0, 36, 0.0001);
+      // At aspect = 1.0 and fov = 42, 58 units distance provides 44.5 units of view height, perfectly framing the 36-unit patio + quiet zone
+      this.camera.position.set(0, 58, 0.0001);
       this.camera.up.copy(this.SCAN_UP);
       this.camera.lookAt(0, 0, 0);
     }

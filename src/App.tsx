@@ -287,7 +287,7 @@ export default function App() {
       </div>
 
       {/* 4. FLOATING PERSPECTIVE HINT PILL */}
-      <div className="fixed bottom-48 sm:bottom-44 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+      <div className={`fixed ${viewMode === 'topDown' ? 'bottom-40 sm:bottom-36' : 'bottom-48 sm:bottom-44'} left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all duration-300`}>
         <button
           onClick={() => {
             const nextMode = viewMode === 'isometric' ? 'topDown' : 'isometric'
