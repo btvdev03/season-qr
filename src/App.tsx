@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import confetti from 'canvas-confetti'
 import { ScanGuideModal } from './components/ScanGuideModal'
 import type { SeasonKey, StyleKey, ViewMode } from './types'
-import { resolveSeason } from './utils/seasonUtils'
+import { resolveSeason, getAutoSeason } from './utils/seasonUtils'
 import { SceneManager } from './engine/SceneManager'
 import { soundEngine } from './utils/audioAmbiance'
 import {
@@ -17,12 +17,10 @@ import {
   Link2,
   Camera,
   ExternalLink,
-  Activity,
 } from 'lucide-react'
 import {
   recordQRGeneration,
   fetchGlobalQRCount,
-  getLocalUserCount,
   getCachedGlobalCount,
   formatCount,
 } from './utils/qrCounter'
@@ -31,19 +29,18 @@ export default function App() {
   const containerRef = useRef<HTMLDivElement>(null)
   const sceneManagerRef = useRef<SceneManager | null>(null)
 
-  // Core App State
+  // Core App State (Auto-detect season based on month: Tháng 11 = Đông Sa Pa)
   const [url, setUrl] = useState<string>('https://btvdev03.github.io/season-qr/')
   const [inputUrl, setInputUrl] = useState<string>('https://btvdev03.github.io/season-qr/')
-  const [selectedSeason, setSelectedSeason] = useState<SeasonKey>('summer')
-  const [selectedStyle, setSelectedStyle] = useState<StyleKey>('tree')
+  const [selectedSeason, setSelectedSeason] = useState<SeasonKey>(() => getAutoSeason())
+  const selectedStyle: StyleKey = 'tree'
   const [viewMode, setViewMode] = useState<ViewMode>('isometric')
   const [isMuted, setIsMuted] = useState<boolean>(true)
   const [isExporting, setIsExporting] = useState<boolean>(false)
   const [showSettingsDrawer, setShowSettingsDrawer] = useState<boolean>(false)
 
-  // Live QR Creation Counter State
+  // Live QR Creation Counter State (Displayed on outside header bar)
   const [globalQRCount, setGlobalQRCount] = useState<number>(() => getCachedGlobalCount())
-  const [userQRCount, setUserQRCount] = useState<number>(() => getLocalUserCount())
 
   // Interactive Settings State
   const [isAutoRotate, setIsAutoRotate] = useState<boolean>(false)
@@ -121,9 +118,8 @@ export default function App() {
     const trimmed = inputUrl.trim()
     if (trimmed && trimmed !== url) {
       setUrl(trimmed)
-      recordQRGeneration().then(({ globalCount, userCount }) => {
+      recordQRGeneration().then(({ globalCount }) => {
         setGlobalQRCount(globalCount)
-        setUserQRCount(userCount)
       })
     }
   }
@@ -132,9 +128,8 @@ export default function App() {
     if (presetUrl !== url) {
       setInputUrl(presetUrl)
       setUrl(presetUrl)
-      recordQRGeneration().then(({ globalCount, userCount }) => {
+      recordQRGeneration().then(({ globalCount }) => {
         setGlobalQRCount(globalCount)
-        setUserQRCount(userCount)
       })
     } else {
       setInputUrl(presetUrl)
@@ -184,7 +179,7 @@ export default function App() {
   const getSeasonBackgroundClass = () => {
     switch (actualSeason) {
       case 'spring':
-        return 'from-[#fff5f8] via-[#fdf0f4] to-[#f5e1eb]'
+        return 'from-[#fffef7] via-[#fefbf0] to-[#fef3c7]/30'
       case 'autumn':
         return 'from-[#fefcf8] via-[#fbf3e6] to-[#f4e4d0]'
       case 'winter':
@@ -199,7 +194,7 @@ export default function App() {
   const getSeasonAuraGradient = () => {
     switch (actualSeason) {
       case 'spring':
-        return 'radial-gradient(circle at 50% 46%, rgba(244, 114, 182, 0.22) 0%, rgba(251, 207, 232, 0.35) 30%, transparent 68%)'
+        return 'radial-gradient(circle at 50% 46%, rgba(234, 179, 8, 0.22) 0%, rgba(254, 240, 138, 0.35) 30%, transparent 68%)'
       case 'autumn':
         return 'radial-gradient(circle at 50% 46%, rgba(245, 158, 11, 0.22) 0%, rgba(253, 230, 138, 0.35) 30%, transparent 68%)'
       case 'winter':
@@ -214,10 +209,10 @@ export default function App() {
     switch (actualSeason) {
       case 'spring':
         return {
-          label: 'Xuân Đào Mai',
+          label: 'Xuân Mai Vàng',
           shortLabel: 'Xuân',
-          icon: '🌸',
-          color: 'bg-pink-100 text-pink-800 border-pink-200',
+          icon: '🌼',
+          color: 'bg-amber-100 text-amber-900 border-amber-300',
         }
       case 'autumn':
         return {
@@ -277,16 +272,14 @@ export default function App() {
               </span>
 
               {/* Global QR Creation Counter Badge */}
-              <button
-                type="button"
-                onClick={() => setShowSettingsDrawer(true)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-300/60 shadow-2xs whitespace-nowrap shrink-0 transition-all active:scale-95 cursor-pointer"
-                title="Tổng số lượt mã QR đã tạo toàn cầu (Nhấp để xem chi tiết)"
+              <div
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-500/15 text-amber-950 border border-amber-300/80 shadow-2xs whitespace-nowrap shrink-0"
+                title="Tổng số lượt mã QR đã tạo toàn cầu"
               >
-                <span className="text-[11px]">⚡</span>
+                <span className="text-[11px] text-amber-600 font-black">⚡</span>
                 <span className="hidden sm:inline">{formatCount(globalQRCount)} lượt tạo</span>
                 <span className="sm:hidden">{formatCount(globalQRCount, true)} tạo</span>
-              </button>
+              </div>
             </div>
             <div className="text-[11px] text-stone-600 font-medium hidden sm:block truncate">
               Trình Tạo Mã QR 3D Nghệ Thuật 4 Mùa Việt Nam • 100% Client-side
@@ -451,7 +444,7 @@ export default function App() {
           {/* Row 2: 4-Season Segmented Tab Switcher */}
           <div className="flex items-center justify-between gap-1 p-1 rounded-xl sm:rounded-2xl bg-stone-100 border border-stone-200/80 text-xs font-bold">
             {[
-              { id: 'spring', label: 'Xuân', icon: '🌸', activeClass: 'bg-pink-100 text-pink-900 border-pink-300 shadow-xs' },
+              { id: 'spring', label: 'Xuân', icon: '🌼', activeClass: 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs' },
               { id: 'summer', label: 'Hạ', icon: '☀️', activeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 shadow-xs' },
               { id: 'autumn', label: 'Thu', icon: '🍁', activeClass: 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs' },
               { id: 'winter', label: 'Đông', icon: '❄️', activeClass: 'bg-sky-100 text-sky-900 border-sky-300 shadow-xs' },
@@ -489,232 +482,200 @@ export default function App() {
         </div>
       </div>
 
-      {/* 6. SLIDE-OVER SETTINGS DRAWER (100% Functional) */}
+      {/* 6. SLIDE-OVER SETTINGS DRAWER (Redesigned & Streamlined) */}
       {showSettingsDrawer && (
-        <div className="fixed inset-0 z-40 flex justify-end bg-black/25 backdrop-blur-xs">
+        <div className="fixed inset-0 z-40 flex justify-end bg-black/30 backdrop-blur-xs animate-in fade-in duration-200">
           <div
             className="absolute inset-0"
             onClick={() => setShowSettingsDrawer(false)}
           />
-          <div className="relative w-full max-w-sm h-full bg-white shadow-2xl p-6 flex flex-col justify-between overflow-y-auto z-10 border-l border-stone-200">
+          <div className="relative w-full max-w-sm h-full bg-white/95 backdrop-blur-xl shadow-2xl p-6 flex flex-col justify-between overflow-y-auto z-10 border-l border-stone-200/90">
             <div className="space-y-6">
               {/* Drawer Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-stone-200">
-                <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-emerald-600" />
-                  <h3 className="font-extrabold text-stone-900 text-sm">Cài Đặt & Kiểu Dáng</h3>
+              <div className="flex items-center justify-between pb-4 border-b border-stone-200/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-700">
+                    <SlidersHorizontal className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-stone-900 text-sm">Cài Đặt & Tuỳ Chỉnh</h3>
+                    <p className="text-[11px] text-stone-500 font-medium">Góc nhìn diorama & xuất ảnh QR</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowSettingsDrawer(false)}
-                  className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors font-bold"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-all font-bold active:scale-95"
+                  title="Đóng cài đặt"
                 >
                   ✕
                 </button>
               </div>
 
-              {/* LIVE QR CREATION COUNTER STATS */}
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-50 to-orange-50 border border-amber-200/90 shadow-2xs space-y-3">
+              {/* Setting 1: Interaction & Camera Controls */}
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
-                    <span className="text-amber-600 font-black">⚡</span> Thống Kê Số Lượt Tạo QR
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100/90 text-amber-900 border border-amber-200">
-                    <Activity className="w-3 h-3 text-amber-600 animate-pulse" />
-                    <span>Thời gian thực</span>
+                  <label className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+                    Tương Tác & Hiệu Ứng 3D
+                  </label>
+                  <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                    60 FPS
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-center">
-                  <div className="p-2.5 rounded-xl bg-white/90 border border-amber-200/70 shadow-xs">
-                    <div className="text-[10px] text-stone-500 font-semibold uppercase tracking-wider">Toàn cầu</div>
-                    <div className="text-xl font-black text-amber-900 tracking-tight mt-0.5">
-                      {formatCount(globalQRCount)}
+                <div className="space-y-2">
+                  {/* Auto Rotate Toggle */}
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-stone-50/80 hover:bg-stone-50 border border-stone-200/70 transition-all">
+                    <div className="space-y-0.5 pr-2">
+                      <div className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                        <RotateCcw className="w-3.5 h-3.5 text-stone-500" />
+                        <span>Tự động xoay 360°</span>
+                      </div>
+                      <div className="text-[10px] text-stone-500 leading-snug">
+                        Quay chậm nhẹ nhàng để ngắm toàn cảnh cây bonsai
+                      </div>
                     </div>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-white/90 border border-amber-200/70 shadow-xs">
-                    <div className="text-[10px] text-stone-500 font-semibold uppercase tracking-wider">Trên máy bạn</div>
-                    <div className="text-xl font-black text-stone-800 tracking-tight mt-0.5">
-                      {formatCount(userQRCount)}
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-[10px] text-amber-900/75 leading-relaxed">
-                  Tự động đếm và đồng bộ mỗi khi bạn hoặc người dùng nhập link / tạo mã QR mới.
-                </p>
-              </div>
-
-              {/* Setting 1: 3D Diorama Style Selection */}
-              <div className="space-y-2.5">
-                <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-                  Phong Cách Diorama 3D
-                </label>
-                <div className="grid grid-cols-1 gap-2">
-                  {[
-                    {
-                      id: 'tree',
-                      name: 'Cây Bonsai Cổ Thụ 4 Mùa',
-                      desc: 'Tán lá 4 mùa Việt Nam, cành nhánh PBR, vườn cỏ hoa dại & rêu phong ôm gốc',
-                      icon: '🌳',
-                    },
-                    {
-                      id: 'island',
-                      name: 'Đảo Ngọc Non Nước',
-                      desc: 'Kỳ quan đảo nổi bồng bềnh non nước Việt Nam với nhũ đá kỳ vĩ & rễ cây buông rủ',
-                      icon: '🏝️',
-                    },
-                    {
-                      id: 'zen',
-                      name: 'Vườn Thiền Non Bộ',
-                      desc: 'Nghệ thuật hòn non bộ cổ kính, đèn đá tỏa sáng và sỏi thiền tĩnh tại',
-                      icon: '⛩️',
-                    },
-                  ].map((style) => (
                     <button
-                      key={style.id}
-                      onClick={() => setSelectedStyle(style.id as StyleKey)}
-                      className={`flex items-start gap-3 p-3 rounded-2xl border text-left transition-all ${
-                        selectedStyle === style.id
-                          ? 'border-emerald-500 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-500/20 shadow-xs'
-                          : 'border-stone-200 hover:bg-stone-50 text-stone-800'
+                      type="button"
+                      onClick={() => {
+                        const next = !isAutoRotate
+                        setIsAutoRotate(next)
+                        sceneManagerRef.current?.setAutoRotate(next)
+                      }}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
+                        isAutoRotate ? 'bg-emerald-600 justify-end' : 'bg-stone-300 justify-start'
                       }`}
                     >
-                      <span className="text-2xl mt-0.5">{style.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-stone-900">{style.name}</div>
-                        <div className="text-[11px] text-stone-500 leading-snug mt-0.5">{style.desc}</div>
-                      </div>
+                      <div className="bg-white w-4 h-4 rounded-full shadow-md" />
                     </button>
-                  ))}
+                  </div>
+
+                  {/* Weather Particles Toggle */}
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-stone-50/80 hover:bg-stone-50 border border-stone-200/70 transition-all">
+                    <div className="space-y-0.5 pr-2">
+                      <div className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Hiệu ứng thời tiết</span>
+                      </div>
+                      <div className="text-[10px] text-stone-500 leading-snug">
+                        Cánh hoa mai, đom đóm hạ, lá phong thu, tuyết Sa Pa
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !isWeatherEnabled
+                        setIsWeatherEnabled(next)
+                        sceneManagerRef.current?.setWeatherEnabled(next)
+                      }}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
+                        isWeatherEnabled ? 'bg-emerald-600 justify-end' : 'bg-stone-300 justify-start'
+                      }`}
+                    >
+                      <div className="bg-white w-4 h-4 rounded-full shadow-md" />
+                    </button>
+                  </div>
+
+                  {/* Camera Rotation Lock Toggle */}
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-stone-50/80 hover:bg-stone-50 border border-stone-200/70 transition-all">
+                    <div className="space-y-0.5 pr-2">
+                      <div className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Khóa góc camera chuẩn</span>
+                      </div>
+                      <div className="text-[10px] text-stone-500 leading-snug">
+                        Góc cố định mượt mà 60 FPS, không lệch khi thao tác
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !isCameraLocked
+                        setIsCameraLocked(next)
+                        sceneManagerRef.current?.setCameraRotationLock(next)
+                      }}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
+                        isCameraLocked ? 'bg-emerald-600 justify-end' : 'bg-stone-300 justify-start'
+                      }`}
+                    >
+                      <div className="bg-white w-4 h-4 rounded-full shadow-md" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Setting 2: Camera & Interaction Controls */}
-              <div className="space-y-2.5 pt-2 border-t border-stone-200">
-                <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-                  Tương Tác & Camera
-                </label>
-
-                {/* Auto Rotate Toggle */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
-                  <div className="space-y-0.5">
-                    <div className="text-xs font-bold text-stone-800">Tự động xoay 360°</div>
-                    <div className="text-[10px] text-stone-500">Xoay chậm nhẹ nhàng để ngắm toàn cảnh diorama</div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const next = !isAutoRotate
-                      setIsAutoRotate(next)
-                      sceneManagerRef.current?.setAutoRotate(next)
-                    }}
-                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                      isAutoRotate ? 'bg-emerald-600 justify-end' : 'bg-stone-300 justify-start'
-                    }`}
-                  >
-                    <div className="bg-white w-4 h-4 rounded-full shadow-md" />
-                  </button>
+              {/* Setting 2: Export Resolution & Download Actions */}
+              <div className="space-y-3 pt-3 border-t border-stone-200/80">
+                <div className="space-y-0.5">
+                  <label className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+                    Độ Phân Giải Tải Ảnh
+                  </label>
+                  <p className="text-[10px] text-stone-500 font-medium">Xuất ảnh PNG siêu nét để in ấn hoặc chia sẻ</p>
                 </div>
 
-                {/* Weather Particles Toggle */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
-                  <div className="space-y-0.5">
-                    <div className="text-xs font-bold text-stone-800">Hiệu ứng thời tiết</div>
-                    <div className="text-[10px] text-stone-500">Cánh hoa đào, đom đóm, lá phong, tuyết rơi</div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const next = !isWeatherEnabled
-                      setIsWeatherEnabled(next)
-                      sceneManagerRef.current?.setWeatherEnabled(next)
-                    }}
-                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                      isWeatherEnabled ? 'bg-emerald-600 justify-end' : 'bg-stone-300 justify-start'
-                    }`}
-                  >
-                    <div className="bg-white w-4 h-4 rounded-full shadow-md" />
-                  </button>
-                </div>
-
-                {/* Camera Rotation Lock Toggle */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
-                  <div className="space-y-0.5">
-                    <div className="text-xs font-bold text-stone-800">Khóa góc camera chuẩn</div>
-                    <div className="text-[10px] text-stone-500">Góc cố định mượt mà 60 FPS không trôi góc</div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const next = !isCameraLocked
-                      setIsCameraLocked(next)
-                      sceneManagerRef.current?.setCameraRotationLock(next)
-                    }}
-                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                      isCameraLocked ? 'bg-emerald-600 justify-end' : 'bg-stone-300 justify-start'
-                    }`}
-                  >
-                    <div className="bg-white w-4 h-4 rounded-full shadow-md" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Setting 3: Export Resolution */}
-              <div className="space-y-2.5 pt-2 border-t border-stone-200">
-                <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-                  Độ Phân Giải Tải Ảnh
-                </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: '1080p', label: '1080p', desc: '1920px' },
-                    { id: '2k', label: '2K QHD', desc: '2560px' },
-                    { id: '4k', label: '4K Ultra', desc: '3840px' },
+                    { id: '1080p', label: '1080p', desc: '1920×1920' },
+                    { id: '2k', label: '2K QHD', desc: '2560×2560' },
+                    { id: '4k', label: '4K Ultra', desc: '3840×3840' },
                   ].map((res) => (
                     <button
                       key={res.id}
+                      type="button"
                       onClick={() => setExportQuality(res.id as '1080p' | '2k' | '4k')}
-                      className={`p-2 rounded-xl border text-center transition-all ${
+                      className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                         exportQuality === res.id
-                          ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold'
-                          : 'border-stone-200 hover:bg-stone-50 text-stone-700 font-medium'
+                          ? 'border-emerald-600 bg-emerald-50/90 text-emerald-950 font-extrabold ring-1 ring-emerald-500/30 shadow-2xs'
+                          : 'border-stone-200/80 hover:bg-stone-50 text-stone-700 font-semibold'
                       }`}
                     >
                       <div className="text-xs">{res.label}</div>
-                      <div className="text-[10px] text-stone-400">{res.desc}</div>
+                      <div className="text-[10px] text-stone-500 mt-0.5">{res.desc}</div>
                     </button>
                   ))}
                 </div>
 
                 <div className="grid grid-cols-1 gap-2 pt-1">
                   <button
-                    onClick={() => handleExport(false)}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold shadow-xs transition-all active:scale-95"
+                    type="button"
+                    onClick={() => handleExport(true)}
+                    disabled={isExporting}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Tải ảnh 3D Isometric ({exportQuality.toUpperCase()})</span>
+                    <span>Tải Mã QR Quét Chuẩn 90° ({exportQuality.toUpperCase()})</span>
                   </button>
 
                   <button
-                    onClick={() => handleExport(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all active:scale-95"
+                    type="button"
+                    onClick={() => handleExport(false)}
+                    disabled={isExporting}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Tải mã QR 90° Quét Ngay ({exportQuality.toUpperCase()})</span>
+                    <Camera className="w-3.5 h-3.5 text-stone-300" />
+                    <span>Tải Ảnh Diorama 3D ({exportQuality.toUpperCase()})</span>
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Drawer Footer */}
-            <div className="pt-4 border-t border-stone-200 text-[11px] text-stone-500 text-center space-y-1">
-              <div>SeasonQR • Trình tạo mã QR 3D nghệ thuật Việt Nam</div>
-              <div>
-                Tác giả:{' '}
-                <a
-                  href="https://btvdev03.github.io/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-emerald-700 font-bold underline hover:text-emerald-800"
-                >
-                  Võ Tấn Bản (btvdev03)
-                </a>
+            {/* Drawer Footer & Credits */}
+            <div className="pt-4 border-t border-stone-200/80 space-y-2">
+              <div className="p-3 rounded-2xl bg-stone-50/80 border border-stone-200/70 text-center space-y-1">
+                <div className="text-xs font-black text-stone-900">SeasonQR</div>
+                <div className="text-[10px] text-stone-500">
+                  Mã QR 3D Nghệ Thuật 4 Mùa Việt Nam • 100% Client-side
+                </div>
+                <div className="pt-1 text-[11px] text-stone-700">
+                  Tác giả:{' '}
+                  <a
+                    href="https://btvdev03.github.io/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-emerald-700 font-extrabold hover:text-emerald-800 underline underline-offset-2"
+                  >
+                    Võ Tấn Bản (btvdev03)
+                  </a>
+                </div>
               </div>
             </div>
           </div>

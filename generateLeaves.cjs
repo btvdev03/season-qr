@@ -47,11 +47,11 @@ const RAMPS = {
     { pos: 1.0, color: '#86efac' }  // Luminous leaf crest highlight
   ],
   spring: [
-    { pos: 0.0, color: '#a21caf' }, // Warm orchid rose shadow
-    { pos: 0.22, color: '#ec4899' }, // Radiant cherry blossom rose
-    { pos: 0.5, color: '#f472b6' }, // True Sakura cherry blossom pink
-    { pos: 0.78, color: '#fbcfe8' }, // Soft delicate blushing petal
-    { pos: 1.0, color: '#fff5f8' }  // Crisp white blossom tip
+    { pos: 0.0, color: '#78350f' }, // Warm amber-bark shadow
+    { pos: 0.22, color: '#b45309' }, // Rich golden honey
+    { pos: 0.48, color: '#eab308' }, // True royal Mai yellow (Hoa Mai Vàng Tết)
+    { pos: 0.75, color: '#fde047' }, // Sunny blooming Mai petals
+    { pos: 1.0, color: '#fef9c3' }  // Luminous sunlit petal highlights
   ],
   autumn: [
     { pos: 0.0, color: '#3d0a0a' }, // Deep mahogany shadow

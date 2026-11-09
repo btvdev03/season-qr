@@ -128,38 +128,38 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
   spring: {
     id: 'spring',
     name: 'Spring Blossom',
-    vietnameseName: 'Xuân Đào Mai',
-    icon: '🌸',
-    description: 'Fresh peach blossoms and golden apricots welcoming the traditional Lunar New Year.',
-    vietnameseDescription: 'Hoa đào phớt hồng miền Bắc quyện sắc mai vàng phương Nam, chồi non lộc biếc đón Tết cổ truyền.',
+    vietnameseName: 'Xuân Mai Vàng',
+    icon: '🌼',
+    description: 'Golden Vietnamese apricot blossoms (Hoa Mai Vàng) welcoming the traditional Lunar New Year with prosperity and warmth.',
+    vietnameseDescription: 'Sắc mai vàng rực rỡ phương Nam đón Tết cổ truyền, chồi non lộc biếc mang tài lộc và phú quý đầu năm.',
     ground: {
-      darkModule: '#1a0d18', // Deep cherry charcoal for maximum scan contrast
-      lightModule: '#fff5f7', // Pale sakura snow
-      groundSlab: '#4a2837', // Plum stone slab
-      groundRim: '#2b141e',
-      finderDark: '#0a0307', // High contrast finder
+      darkModule: '#261a08', // Deep amber charcoal for maximum scan contrast
+      lightModule: '#fefce8', // Pale warm ivory mai
+      groundSlab: '#451a03', // Warm cedar slab
+      groundRim: '#271003',
+      finderDark: '#1c0b02', // High contrast finder
       finderLight: '#ffffff',
     },
     foliage: {
-      primary: '#ff85a1', // Peach blossom pink
-      secondary: '#ffc5d3', // Light blossom
-      accent: '#fff5f7', // Pure white blossom tips
-      subAccent: '#ffe66d', // Golden apricot stamen
+      primary: '#eab308', // Radiant royal mai yellow
+      secondary: '#facc15', // Bright sunny mai blossom
+      accent: '#fef08a', // Luminous petal tip
+      subAccent: '#ca8a04', // Golden amber stamen
     },
     structure: {
-      trunkPrimary: '#3e2723', // Warm cherry bark
-      trunkSecondary: '#5d4037',
+      trunkPrimary: '#3e2712', // Warm aged bonsai bark
+      trunkSecondary: '#5d3c1a',
       rockPrimary: '#7e8a82',
       rockSecondary: '#99a79e',
     },
     lighting: {
-      ambientColor: '#fff0f5',
+      ambientColor: '#fffbeb',
       ambientIntensity: 0.65,
-      sunColor: '#fff8f0',
+      sunColor: '#fffdf0',
       sunIntensity: 1.15,
       sunPosition: [16, 28, 16],
-      skyColor: '#fdf2f8',
-      fogColor: '#fdf2f8',
+      skyColor: '#fefce8',
+      fogColor: '#fefce8',
       fogDensity: 0.005,
     },
     weather: {
@@ -167,7 +167,7 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       count: 65,
       speed: 0.85,
       size: 0.35,
-      colors: ['#f472b6', '#fbcfe8', '#fda4af', '#fff1f2'],
+      colors: ['#facc15', '#fde047', '#fef08a', '#eab308'],
       swayAmplitude: 0.85,
       swayFrequency: 1.8,
       rising: false,

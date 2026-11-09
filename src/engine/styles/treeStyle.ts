@@ -7,7 +7,7 @@
  *    - Organic branching limbs with flared root collar.
  *    - Double-billboard oak foliage cards with alpha cutout and realistic leaf silhouettes.
  *    - Built-in real-time vertex wind physics (sways naturally in 60 FPS).
- *    - High-chroma seasonal leaf textures (Xuân Đào Mai, Hạ Phượng Vĩ, Thu Cúc Vàng, Đông Sa Pa).
+ *    - High-chroma seasonal leaf textures (Xuân Mai Vàng, Hạ Phượng Vĩ, Thu Cúc Vàng, Đông Sa Pa).
  *
  * 2. Ultra-High-Performance GPU-Instanced Botanical Diorama:
  *    - 100% InstancedMesh architecture for Grass, Flowers, Clovers, Moss, and Fallen Petals.
@@ -137,21 +137,21 @@ function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
     case 'spring':
       return {
         leafTexture: `${base}assets/leaves/oak_spring.png`,
-        barkTint: 0xfff0f5, // Warm cherry tree bark
+        barkTint: 0xfffaea, // Warm aged apricot tree bark
         grassDark: '#14532d',
         grassMid: '#16a34a',
         grassLight: '#4ade80',
-        grassTip: '#bbf7d0',
-        flowerColors: ['#ffffff', '#fbcfe8', '#f472b6', '#fda4af', '#f43f5e'],
-        cloverColors: ['#16a34a', '#22c55e', '#4ade80'],
-        fallenLeaves: ['#ffffff', '#fff1f2', '#fbcfe8', '#f472b6', '#fda4af'],
+        grassTip: '#fde047',
+        flowerColors: ['#ffffff', '#fef08a', '#facc15', '#fbbf24', '#f59e0b'],
+        cloverColors: ['#16a34a', '#22c55e', '#84cc16'],
+        fallenLeaves: ['#facc15', '#fde047', '#fef08a', '#eab308', '#ffffff'],
         mossColor: '#4d7c0f',
-        stoneLight: '#fdf9f9',
-        stoneDark: '#f5eaed',
-        stoneShadow: '#e7d6dc',
-        plinthCurb: '#4a2f35',
-        qrFinderDark: '#4a0418', // Deep royal imperial plum
-        qrDataColors: ['#701a35', '#831843', '#9d174d', '#be185d', '#c2185b', '#db2777'],
+        stoneLight: '#fefdf7',
+        stoneDark: '#f7f4ea',
+        stoneShadow: '#e8e2d2',
+        plinthCurb: '#4a3b25',
+        qrFinderDark: '#451a03', // Deep royal mahogany amber
+        qrDataColors: ['#713f12', '#854d0e', '#a16207', '#ca8a04', '#d97706', '#b45309'],
       };
     case 'winter':
       return {
@@ -222,7 +222,7 @@ function getSeasonalPaverScanColor(seasonId: string, r: number, c: number): THRE
   const rnd = hash2D(r, c);
   let tones: string[];
   if (seasonId === 'spring') {
-    tones = ['#fdf7f9', '#fcf2f6', '#fff5f8', '#faf0f4'];
+    tones = ['#fefdf6', '#fdfbf0', '#fffef8', '#faf7ec'];
   } else if (seasonId === 'autumn') {
     tones = ['#fdf8f0', '#f9f2e4', '#fcf6eb', '#f6eee0'];
   } else if (seasonId === 'winter') {
@@ -309,7 +309,7 @@ function getSeasonalTreeScanColor(
 
   if (effectiveCanopy < 1.05 && v < 0.65) {
     if (seasonId === 'spring') {
-      const greens = ['#4a0418', '#500720', '#701a35', '#831843', '#5c0620', '#6b0f2b'];
+      const greens = ['#451a03', '#713f12', '#78350f', '#854d0e', '#592004', '#6a2808'];
       return new THREE.Color(greens[Math.floor(rnd * greens.length)]);
     }
     if (seasonId === 'autumn') {
@@ -328,7 +328,7 @@ function getSeasonalTreeScanColor(
   // 5. Ground / Basin / Roots
   if (v >= 0.65) {
     if (seasonId === 'spring') {
-      const g = ['#31020f', '#4a0418', '#500720', '#3e1704'];
+      const g = ['#271003', '#3e1704', '#451a03', '#2a0e02'];
       return new THREE.Color(g[Math.floor(rnd2 * g.length)]);
     }
     if (seasonId === 'autumn') {
@@ -345,7 +345,7 @@ function getSeasonalTreeScanColor(
   }
 
   // Ambient outside canopy periphery
-  if (seasonId === 'spring') return new THREE.Color(rnd > 0.5 ? '#500720' : '#4a0418');
+  if (seasonId === 'spring') return new THREE.Color(rnd > 0.5 ? '#592004' : '#451a03');
   if (seasonId === 'autumn') return new THREE.Color(rnd > 0.5 ? '#450a0a' : '#380505');
   if (seasonId === 'winter') return new THREE.Color(rnd > 0.5 ? '#091024' : '#020617');
   return new THREE.Color(rnd > 0.5 ? '#0f381e' : '#052e16');

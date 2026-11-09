@@ -2,14 +2,14 @@ import type { ActualSeason, SeasonInfo, StyleInfo, SeasonKey } from '../types'
 
 export function getAutoSeason(): ActualSeason {
   const month = new Date().getMonth() + 1 // 1 - 12
-  // Northern Hemisphere / Vietnam seasons:
-  // Xuân (Spring): 3, 4, 5
-  // Hạ (Summer): 6, 7, 8
-  // Thu (Autumn): 9, 10, 11
-  // Đông (Winter): 12, 1, 2
-  if (month >= 3 && month <= 5) return 'spring'
-  if (month >= 6 && month <= 8) return 'summer'
-  if (month >= 9 && month <= 11) return 'autumn'
+  // Vietnam 4 seasons:
+  // Xuân (Spring - Tết Mai Vàng): Tháng 2, 3, 4
+  // Hạ (Summer - Nắng hè phượng vĩ): Tháng 5, 6, 7
+  // Thu (Autumn - Mùa thu cúc vàng): Tháng 8, 9, 10
+  // Đông (Winter - Sa Pa mùa đông rét): Tháng 11, 12, 1
+  if (month >= 2 && month <= 4) return 'spring'
+  if (month >= 5 && month <= 7) return 'summer'
+  if (month >= 8 && month <= 10) return 'autumn'
   return 'winter'
 }
 
@@ -32,12 +32,12 @@ export const SEASONS: SeasonInfo[] = [
   },
   {
     id: 'spring',
-    name: 'Xuân Đào Mai',
-    emoji: '🌸',
-    description: 'Hoa đào phớt hồng miền Bắc quyện mai vàng phương Nam đón Tết',
-    color: '#f472b6',
-    accentColor: 'pink',
-    badgeClass: 'bg-pink-500/20 text-pink-300 border-pink-500/40',
+    name: 'Xuân Mai Vàng',
+    emoji: '🌼',
+    description: 'Sắc mai vàng rực rỡ phương Nam đón Tết cổ truyền, mang tài lộc và phú quý',
+    color: '#eab308',
+    accentColor: 'amber',
+    badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
   },
   {
     id: 'summer',
