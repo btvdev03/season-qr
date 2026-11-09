@@ -74,7 +74,7 @@ export class SceneManager {
   // Camera Smooth Transition State
   private isTransitioning: boolean = false;
   private transitionTime: number = 0;
-  private transitionDuration: number = 0.75; // seconds
+  private transitionDuration: number = 1.15; // seconds
   private startCamPos = new THREE.Vector3();
   private startCamTarget = new THREE.Vector3();
   private startCamUp = new THREE.Vector3();

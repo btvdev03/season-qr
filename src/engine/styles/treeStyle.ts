@@ -30,8 +30,15 @@ export interface MorphableTreeGroup extends THREE.Group {
 }
 
 interface QRMosaicModule {
-  worldPos: THREE.Vector3;
-  colorTree: THREE.Color;
+  x: number;
+  z: number;
+  y3D: number;
+  scaleY3D: number;
+  scaleXZ3D: number;
+  color3D: THREE.Color;
+  yFlat: number;
+  scaleYFlat: number;
+  scaleXZFlat: number;
   colorQR: THREE.Color;
 }
 
@@ -69,9 +76,9 @@ const OAK_TREE_PRESET = {
     type: 'oak',
     billboard: 'double',
     angle: 45,
-    count: 32, // Dense, lush, puffy leaf clusters forming continuous rounded cloud volumes
+    count: 18, // Harmonized with elevated voxel foliage, puffy leaf clusters forming continuous rounded cloud volumes
     start: 0.05, // Leaves start early along the terminal branches, leaving no bare holes
-    size: 4.4, // Generous leaf cluster size for cloud-like fluffy foliage
+    size: 3.2, // Balanced foliage cluster size cluster size for cloud-like fluffy foliage
     sizeVariance: 0.65,
     tint: 0xffffff,
     alphaTest: 0.28,
@@ -570,6 +577,18 @@ export const treeStyle: QRStyleGenerator = {
     // Architectural beveled stone paving:
     // Uses 0.94 module ratio so a crisp, elegant 0.06 grout line separates modules like luxury mosaic tiles
     const paverBlockHeight = 0.12;
+
+    // Solid luxury stone terrace bed directly beneath pavers so floor is always continuous and solid in 3D
+    const terraceBedGeo = new THREE.BoxGeometry(sceneSize, paverBlockHeight * 0.95, sceneSize);
+    const terraceBedMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(palette.stoneLight),
+      roughness: 0.85,
+      metalness: 0.04,
+    });
+    const terraceBedMesh = new THREE.Mesh(terraceBedGeo, terraceBedMat);
+    terraceBedMesh.position.y = (paverBlockHeight * 0.95) / 2 - 0.01;
+    terraceBedMesh.receiveShadow = true;
+    patioGroup.add(terraceBedMesh);
     const paverBlockGeo = new THREE.BoxGeometry(
       moduleSize * 0.94,
       paverBlockHeight,
@@ -1196,26 +1215,104 @@ export const treeStyle: QRStyleGenerator = {
     const qrModules: QRMosaicModule[] = [];
     const dummyQR = new THREE.Object3D();
 
+    const cx = (N - 1) / 2;
+    const cy = (N - 1) / 2;
+
     for (let i = 0; i < qrTileCount; i++) {
       const mod = darkModules[i];
       const { x, z } = toWorldPos(mod.row, mod.col);
+      const isFinder = mod.isFinder;
+      const rnd = hash2D(mod.row, mod.col);
+      const rnd2 = hash2D(mod.row * 11 + 17, mod.col * 19 + 23);
 
-      // In 3D tree mode: blends naturally with stone patio
-      const treeHash = ((mod.row * 7 + mod.col * 17) % 5);
-      const colorTree = treeHash === 0 ? new THREE.Color(palette.stoneDark) : new THREE.Color(palette.stoneLight);
+      const u = (mod.col - cx) / cx;
+      const v = (mod.row - cy) / cy;
 
-      // In 90° Scan mode:
-      // Procedural Pixel-Art Tree QR Code matching user reference photo
-      const colorQR = getSeasonalTreeScanColor(season.id, mod.row, mod.col, N, mod.isFinder);
+      const yFlat = paverBlockHeight / 2;
+      const scaleYFlat = 1.0;
+      const scaleXZFlat = 1.0;
+      const colorQR = getSeasonalTreeScanColor(season.id, mod.row, mod.col, N, isFinder);
 
-      const worldPos = new THREE.Vector3(x, paverBlockHeight / 2, z);
-      qrModules.push({ worldPos, colorTree, colorQR });
+      let y3D = yFlat;
+      let scaleY3D = 1.0;
+      let scaleXZ3D = 1.0;
+      let color3D = new THREE.Color(palette.stoneLight);
 
-      dummyQR.position.copy(worldPos);
-      dummyQR.scale.set(1.0, 1.0, 1.0);
+      if (isFinder) {
+        // Finder patterns stay planted firmly on the ground patio
+        y3D = yFlat;
+        scaleY3D = 1.0;
+        scaleXZ3D = 1.0;
+        color3D = new THREE.Color(palette.stoneDark);
+      } else {
+        // 1. Trunk
+        const trunkWidth = 0.09 + Math.max(0, v) * 0.08;
+        const inMainTrunk = Math.abs(u) <= trunkWidth && v >= -0.05 && v <= 0.85;
+
+        // 2. Canopy
+        const canopyX = 0.0;
+        const canopyY = -0.18;
+        const dx = (u - canopyX) / 0.85;
+        const dy = (v - canopyY) / 0.68;
+        const canopyDist = Math.sqrt(dx * dx + dy * dy);
+
+        const dPuff1 = Math.hypot((u + 0.35) / 0.45, (v + 0.30) / 0.38);
+        const dPuff2 = Math.hypot((u - 0.35) / 0.45, (v + 0.30) / 0.38);
+        const dPuffTop = Math.hypot(u / 0.48, (v + 0.55) / 0.35);
+
+        const minPuff = Math.min(canopyDist, dPuff1, dPuff2, dPuffTop);
+        const leafNoise = (rnd - 0.5) * 0.32 + (rnd2 - 0.5) * 0.18;
+        const effectiveCanopy = minPuff + leafNoise;
+
+        if (effectiveCanopy < 1.05 && v < 0.65) {
+          // Elevated in 3D to form the magnificent 3D voxel tree canopy dome!
+          const dNorm = Math.min(1.0, effectiveCanopy / 1.05);
+          const domeH = Math.sqrt(Math.max(0, 1.0 - dNorm * dNorm));
+          const Y_base = 3.4;
+          const Y_peak = 8.6;
+          const organicJitter = (rnd - 0.5) * 0.9 + (rnd2 - 0.5) * 0.6;
+
+          y3D = Y_base + domeH * (Y_peak - Y_base) + organicJitter;
+          scaleY3D = 1.6 + domeH * 1.3;
+          scaleXZ3D = 1.05;
+          color3D = colorQR.clone(); // In 3D, canopy voxel blocks already wear vibrant foliage colors
+        } else if (inMainTrunk) {
+          // Trunk column in 3D
+          const trunkT = Math.max(0, Math.min(1, (0.85 - v) / 0.90));
+          const trunkH = 0.55 + trunkT * 3.2;
+          y3D = trunkH / 2;
+          scaleY3D = trunkH / paverBlockHeight;
+          scaleXZ3D = 1.02;
+          color3D = colorQR.clone(); // Warm wood bark
+        } else {
+          // Ground patio & moss border
+          y3D = yFlat;
+          scaleY3D = 1.0;
+          scaleXZ3D = 1.0;
+          const treeHash = ((mod.row * 7 + mod.col * 17) % 5);
+          color3D = treeHash === 0 ? new THREE.Color(palette.stoneDark) : new THREE.Color(palette.stoneLight);
+        }
+      }
+
+      qrModules.push({
+        x,
+        z,
+        y3D,
+        scaleY3D,
+        scaleXZ3D,
+        color3D,
+        yFlat,
+        scaleYFlat,
+        scaleXZFlat,
+        colorQR,
+      });
+
+      // Initialize in 3D mode (at y3D, scale3D)
+      dummyQR.position.set(x, y3D, z);
+      dummyQR.scale.set(scaleXZ3D, scaleY3D, scaleXZ3D);
       dummyQR.updateMatrix();
       qrTileMesh.setMatrixAt(i, dummyQR.matrix);
-      qrTileMesh.setColorAt(i, colorTree);
+      qrTileMesh.setColorAt(i, color3D);
     }
 
     qrTileMesh.instanceMatrix.needsUpdate = true;
@@ -1223,7 +1320,7 @@ export const treeStyle: QRStyleGenerator = {
     patioGroup.add(qrTileMesh);
 
     // ==========================================
-    // 5. REAL-TIME WIND SWAY & SCAN-MODE MORPH (ZERO-ALLOCATION LOOP)
+    // 5. REAL-TIME WIND SWAY & 1:1 VOXEL MORPH (ZERO-ALLOCATION LOOP)
     // ==========================================
     let lastProgress = -1;
 
@@ -1233,44 +1330,55 @@ export const treeStyle: QRStyleGenerator = {
       const p = THREE.MathUtils.clamp(progress, 0, 1);
       const isProgressChanging = Math.abs(p - lastProgress) > 0.001;
 
-      // 1. Collapse tree & grass when transitioning to top-down QR
+      // 1. Smooth 1:1 Voxel Compression & Camera Synchronization
       if (isProgressChanging) {
-        const decorScale = Math.max(0.0001, 1.0 - Math.pow(p, 1.35));
-        const decorSinkY = -12.0 * p;
+        lastProgress = p;
+        // Cubic ease-in-out matching ICQR exactly
+        // In SceneManager, p is already eased with easeInOutCubic in exact lockstep with camera
+        const qrEase = p;
+
+        // Fold branches & grass smoothly as canopy voxels descend onto the ground
+        const decorScale = Math.max(0.0001, 1.0 - Math.pow(qrEase, 1.25));
+        const decorSinkY = -6.5 * qrEase;
 
         treeGroup.position.y = decorSinkY;
         treeGroup.scale.set(decorScale, decorScale, decorScale);
         treeGroup.visible = p < 0.98;
 
-        grassGroup.position.y = -3.5 * p;
+        grassGroup.position.y = -2.5 * qrEase;
         grassGroup.scale.set(decorScale, decorScale, decorScale);
         grassGroup.visible = p < 0.98;
-      }
 
-      // 2. Real-time Wind Physics (only when tree is visible in 3D mode)
-      if (p < 0.95 && typeof realisticTree.update === 'function') {
-        realisticTree.update(time);
-      }
-
-      // 3. Smooth Color & Elevation Morph for QR Voxel Modules & Light Pavers
-      // ONLY re-upload WebGL color buffer when progress actually changes!
-      if (isProgressChanging) {
-        lastProgress = p;
-        const qrEase = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-
+        // Morph every voxel module: 3D canopy height -> 2D flat ground tile
         for (let i = 0; i < qrTileCount; i++) {
           const mod = qrModules[i];
-          const curColor = new THREE.Color().lerpColors(mod.colorTree, mod.colorQR, qrEase);
+          const curY = THREE.MathUtils.lerp(mod.y3D, mod.yFlat, qrEase);
+          const curScaleY = THREE.MathUtils.lerp(mod.scaleY3D, mod.scaleYFlat, qrEase);
+          const curScaleXZ = THREE.MathUtils.lerp(mod.scaleXZ3D, mod.scaleXZFlat, qrEase);
+
+          dummyQR.position.set(mod.x, curY, mod.z);
+          dummyQR.scale.set(curScaleXZ, curScaleY, curScaleXZ);
+          dummyQR.updateMatrix();
+          qrTileMesh.setMatrixAt(i, dummyQR.matrix);
+
+          const curColor = new THREE.Color().lerpColors(mod.color3D, mod.colorQR, qrEase);
           qrTileMesh.setColorAt(i, curColor);
         }
+        qrTileMesh.instanceMatrix.needsUpdate = true;
         if (qrTileMesh.instanceColor) qrTileMesh.instanceColor.needsUpdate = true;
 
+        // Light pavers color morph
         for (let i = 0; i < lightCount; i++) {
           const paver = lightPaverModules[i];
           const curPaverCol = new THREE.Color().lerpColors(paver.treeColor, paver.scanColor, qrEase);
           lightPaversMesh.setColorAt(i, curPaverCol);
         }
         if (lightPaversMesh.instanceColor) lightPaversMesh.instanceColor.needsUpdate = true;
+      }
+
+      // 2. Real-time Wind Physics (only when tree is visible in 3D mode)
+      if (p < 0.95 && typeof realisticTree.update === 'function') {
+        realisticTree.update(time);
       }
     };
 
