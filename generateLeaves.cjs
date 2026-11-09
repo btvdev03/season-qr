@@ -47,11 +47,11 @@ const RAMPS = {
     { pos: 1.0, color: '#86efac' }  // Luminous leaf crest highlight
   ],
   spring: [
-    { pos: 0.0, color: '#9f1239' }, // Warm rose shadow
-    { pos: 0.2, color: '#f43f5e' }, // Vivid blossom rose
-    { pos: 0.45, color: '#f472b6' }, // True Sakura cherry blossom pink
-    { pos: 0.72, color: '#fbcfe8' }, // Soft delicate petal
-    { pos: 1.0, color: '#fff5f8' }  // Pure white blossom tip
+    { pos: 0.0, color: '#a21caf' }, // Warm orchid rose shadow
+    { pos: 0.22, color: '#ec4899' }, // Radiant cherry blossom rose
+    { pos: 0.5, color: '#f472b6' }, // True Sakura cherry blossom pink
+    { pos: 0.78, color: '#fbcfe8' }, // Soft delicate blushing petal
+    { pos: 1.0, color: '#fff5f8' }  // Crisp white blossom tip
   ],
   autumn: [
     { pos: 0.0, color: '#3d0a0a' }, // Deep mahogany shadow

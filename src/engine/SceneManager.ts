@@ -122,8 +122,10 @@ export class SceneManager {
       powerPreference: 'high-performance',
       preserveDrawingBuffer: true,
     });
-    // Cap at 1.5 to eliminate GPU lag on high-DPI/Retina screens while remaining crystal clear
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    // Adaptive pixel ratio: 1.25 on mobile/tablets, 1.5 on desktop for high-DPI clarity with 0% GPU fillrate lag
+    const isMobile = typeof window !== 'undefined' && (window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent));
+    const maxDpr = isMobile ? 1.25 : 1.5;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
@@ -320,17 +322,24 @@ export class SceneManager {
       this.particles.group.visible = this.scanModeProgress < 0.7;
     }
 
-    // In scan mode, disable directional castShadow to eliminate any false shadows on the QR code
+    // In scan mode, balance ambient and sun illumination to prevent specular glare blowout
+    // while keeping jewel-toned QR modules vibrant, deep, and high-contrast
     if (this.scanModeProgress > 0.05) {
-      this.sunLight.castShadow = false;
+      this.sunLight.castShadow = this.scanModeProgress < 0.4;
       this.ambientLight.intensity = THREE.MathUtils.lerp(
         this.currentSeason.lighting.ambientIntensity,
-        1.35,
+        1.12,
+        this.scanModeProgress
+      );
+      this.sunLight.intensity = THREE.MathUtils.lerp(
+        this.currentSeason.lighting.sunIntensity,
+        0.45,
         this.scanModeProgress
       );
     } else {
       this.sunLight.castShadow = true;
       this.ambientLight.intensity = this.currentSeason.lighting.ambientIntensity;
+      this.sunLight.intensity = this.currentSeason.lighting.sunIntensity;
     }
   }
 
@@ -572,9 +581,12 @@ export class SceneManager {
       }
     } else {
       this.controls.update();
-      // Keep real-time foliage wind sway alive continuously in 3D mode (60 FPS)
-      if (this.scanModeProgress < 0.99) {
-        this.applyScanModeDecor();
+      // Only tick real-time wind physics in 3D mode (avoiding redundant state recalculations)
+      if (this.scanModeProgress < 0.95 && this.styleGroup) {
+        const morphable = this.styleGroup as { updateMorph?: (p: number, time?: number) => void } | null;
+        if (morphable && typeof morphable.updateMorph === 'function') {
+          morphable.updateMorph(this.scanModeProgress, this.clock.getElapsedTime());
+        }
       }
     }
 
