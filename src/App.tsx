@@ -17,7 +17,15 @@ import {
   Link2,
   Camera,
   ExternalLink,
+  Activity,
 } from 'lucide-react'
+import {
+  recordQRGeneration,
+  fetchGlobalQRCount,
+  getLocalUserCount,
+  getCachedGlobalCount,
+  formatCount,
+} from './utils/qrCounter'
 
 export default function App() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -32,6 +40,10 @@ export default function App() {
   const [isMuted, setIsMuted] = useState<boolean>(true)
   const [isExporting, setIsExporting] = useState<boolean>(false)
   const [showSettingsDrawer, setShowSettingsDrawer] = useState<boolean>(false)
+
+  // Live QR Creation Counter State
+  const [globalQRCount, setGlobalQRCount] = useState<number>(() => getCachedGlobalCount())
+  const [userQRCount, setUserQRCount] = useState<number>(() => getLocalUserCount())
 
   // Interactive Settings State
   const [isAutoRotate, setIsAutoRotate] = useState<boolean>(false)
@@ -70,6 +82,17 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Fetch live global QR creation count on mount
+  useEffect(() => {
+    let isMounted = true
+    fetchGlobalQRCount().then((count) => {
+      if (isMounted) setGlobalQRCount(count)
+    })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   // Sync QR URL, Season, and Style changes with the 3D scene
   useEffect(() => {
     if (sceneManagerRef.current) {
@@ -92,18 +115,30 @@ export default function App() {
     soundEngine.setMuted(nextMuted, actualSeason)
   }
 
-  // URL Submit handler
+  // URL Submit handler with automatic creation tracking
   const handleUrlSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     const trimmed = inputUrl.trim()
     if (trimmed && trimmed !== url) {
       setUrl(trimmed)
+      recordQRGeneration().then(({ globalCount, userCount }) => {
+        setGlobalQRCount(globalCount)
+        setUserQRCount(userCount)
+      })
     }
   }
 
   const handleQuickPreset = (presetUrl: string) => {
-    setInputUrl(presetUrl)
-    setUrl(presetUrl)
+    if (presetUrl !== url) {
+      setInputUrl(presetUrl)
+      setUrl(presetUrl)
+      recordQRGeneration().then(({ globalCount, userCount }) => {
+        setGlobalQRCount(globalCount)
+        setUserQRCount(userCount)
+      })
+    } else {
+      setInputUrl(presetUrl)
+    }
   }
 
   // HD Snapshot Export handler
@@ -180,18 +215,21 @@ export default function App() {
       case 'spring':
         return {
           label: 'Xuân Đào Mai',
+          shortLabel: 'Xuân',
           icon: '🌸',
           color: 'bg-pink-100 text-pink-800 border-pink-200',
         }
       case 'autumn':
         return {
           label: 'Thu Cúc Vàng',
+          shortLabel: 'Thu',
           icon: '🍁',
           color: 'bg-amber-100 text-amber-800 border-amber-200',
         }
       case 'winter':
         return {
           label: 'Đông Sa Pa',
+          shortLabel: 'Đông',
           icon: '❄️',
           color: 'bg-sky-100 text-sky-800 border-sky-200',
         }
@@ -199,6 +237,7 @@ export default function App() {
       default:
         return {
           label: 'Hạ Phượng Vĩ',
+          shortLabel: 'Hạ',
           icon: '☀️',
           color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
         }
@@ -217,36 +256,49 @@ export default function App() {
         style={{ background: getSeasonAuraGradient() }}
       />
 
-      {/* 1. DISTINCTIVE HEADER WITH BRAND IDENTITY */}
-      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 pointer-events-none">
+      {/* 1. DISTINCTIVE RESPONSIVE HEADER */}
+      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 py-2.5 sm:px-6 sm:py-4 pointer-events-none gap-2">
         {/* Brand Logo & Active Season Badge */}
-        <div className="flex items-center gap-3 pointer-events-auto">
-          <div className="w-9 h-9 rounded-2xl bg-stone-900 text-white flex items-center justify-center font-bold text-base shadow-md border border-stone-700/30">
+        <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-stone-900 text-white flex items-center justify-center font-bold text-sm sm:text-base shadow-md border border-stone-700/30 shrink-0">
             🌳
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-black text-stone-900 text-lg tracking-tight">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-black text-stone-900 text-base sm:text-lg tracking-tight shrink-0">
                 SeasonQR
               </span>
               <span
-                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border shadow-xs ${badge.color}`}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold border shadow-xs whitespace-nowrap shrink-0 ${badge.color}`}
               >
                 <span>{badge.icon}</span>
-                <span>{badge.label}</span>
+                <span className="hidden sm:inline">{badge.label}</span>
+                <span className="sm:hidden">{badge.shortLabel}</span>
               </span>
+
+              {/* Global QR Creation Counter Badge */}
+              <button
+                type="button"
+                onClick={() => setShowSettingsDrawer(true)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-300/60 shadow-2xs whitespace-nowrap shrink-0 transition-all active:scale-95 cursor-pointer"
+                title="Tổng số lượt mã QR đã tạo toàn cầu (Nhấp để xem chi tiết)"
+              >
+                <span className="text-[11px]">⚡</span>
+                <span className="hidden sm:inline">{formatCount(globalQRCount)} lượt tạo</span>
+                <span className="sm:hidden">{formatCount(globalQRCount, true)} tạo</span>
+              </button>
             </div>
-            <div className="text-[11px] text-stone-600 font-medium hidden sm:block">
+            <div className="text-[11px] text-stone-600 font-medium hidden sm:block truncate">
               Trình Tạo Mã QR 3D Nghệ Thuật 4 Mùa Việt Nam • 100% Client-side
             </div>
           </div>
         </div>
 
         {/* Top Right Actions */}
-        <div className="flex items-center gap-2 pointer-events-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
           <button
             onClick={() => setIsScanGuideOpen(true)}
-            className="p-2.5 rounded-xl bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition-all active:scale-95"
+            className="p-2 sm:p-2.5 rounded-xl bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition-all active:scale-95"
             title="Mẹo quét mã QR"
           >
             <HelpCircle className="w-4 h-4" />
@@ -254,7 +306,7 @@ export default function App() {
 
           <button
             onClick={() => setShowSettingsDrawer(!showSettingsDrawer)}
-            className="p-2.5 rounded-xl bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition-all active:scale-95"
+            className="p-2 sm:p-2.5 rounded-xl bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition-all active:scale-95"
             title="Cài đặt & Tùy chọn"
           >
             <SlidersHorizontal className="w-4 h-4" />
@@ -264,11 +316,11 @@ export default function App() {
             href="https://btvdev03.github.io/"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 hover:bg-white text-stone-800 hover:text-stone-900 border border-stone-200/90 shadow-xs text-xs font-bold transition-all hover:scale-105 active:scale-95"
+            className="flex items-center gap-1 p-2 sm:px-3 sm:py-2 rounded-xl bg-white/90 hover:bg-white text-stone-800 hover:text-stone-900 border border-stone-200/90 shadow-xs text-xs font-bold transition-all hover:scale-105 active:scale-95"
             title="Xem Portfolio Võ Tấn Bản (btvdev03)"
           >
             <ExternalLink className="w-3.5 h-3.5 text-stone-600" />
-            <span>Portfolio</span>
+            <span className="hidden sm:inline">Portfolio</span>
           </a>
         </div>
       </header>
@@ -287,23 +339,23 @@ export default function App() {
       </div>
 
       {/* 4. FLOATING PERSPECTIVE HINT PILL */}
-      <div className={`fixed ${viewMode === 'topDown' ? 'bottom-40 sm:bottom-36' : 'bottom-48 sm:bottom-44'} left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all duration-300`}>
+      <div className={`fixed ${viewMode === 'topDown' ? 'bottom-40 sm:bottom-36' : 'bottom-[148px] sm:bottom-44'} left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all duration-300 w-max max-w-[92vw]`}>
         <button
           onClick={() => {
             const nextMode = viewMode === 'isometric' ? 'topDown' : 'isometric'
             setViewMode(nextMode)
             soundEngine.playMorphSound(nextMode === 'topDown')
           }}
-          className="group flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/95 hover:bg-white text-stone-800 shadow-lg hover:shadow-xl border border-stone-200/90 backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 text-xs font-bold"
+          className="group flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-full bg-white/95 hover:bg-white text-stone-800 shadow-lg hover:shadow-xl border border-stone-200/90 backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 text-[11px] sm:text-xs font-bold whitespace-nowrap"
         >
           {viewMode === 'isometric' ? (
             <>
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
-              <span>Chạm cây để xem mã QR (Góc quét 90°)</span>
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse shrink-0" />
+              <span>Chạm cây để xem mã QR (Góc 90°)</span>
             </>
           ) : (
             <>
-              <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
+              <RotateCcw className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               <span>Tap to see the tree (Xem cây 3D)</span>
             </>
           )}
@@ -311,23 +363,23 @@ export default function App() {
       </div>
 
       {/* 5. LUXURY FLOATING ISLAND COMMAND DOCK */}
-      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-lg px-4 pointer-events-auto">
-        <div className="w-full bg-white/90 backdrop-blur-2xl rounded-3xl p-3 shadow-2xl border border-stone-200/80 flex flex-col gap-2.5 transition-all">
+      <div className="fixed bottom-2.5 sm:bottom-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-lg px-3 sm:px-4 pointer-events-auto pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]">
+        <div className="w-full bg-white/92 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-2.5 sm:p-3 shadow-2xl border border-stone-200/80 flex flex-col gap-2 sm:gap-2.5 transition-all">
           {/* Row 1: Integrated URL Input & Action Cluster */}
           <form
             onSubmit={handleUrlSubmit}
-            className="flex items-center gap-2 bg-stone-100 rounded-2xl p-1.5 border border-stone-200/80 focus-within:border-stone-400 focus-within:bg-white transition-all"
+            className="flex items-center gap-1.5 sm:gap-2 bg-stone-100 rounded-xl sm:rounded-2xl p-1 sm:p-1.5 border border-stone-200/80 focus-within:border-stone-400 focus-within:bg-white transition-all"
           >
-            <div className="pl-2.5 text-stone-500">
-              <Link2 className="w-4 h-4" />
+            <div className="pl-2 sm:pl-2.5 text-stone-500 shrink-0">
+              <Link2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <input
               type="text"
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               onBlur={() => handleUrlSubmit()}
-              placeholder="Nhập link bất kỳ: Zalo, Facebook, VietQR, Website (https://...)"
-              className="flex-1 min-w-0 bg-transparent text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 outline-none font-semibold"
+              placeholder="Nhập link bất kỳ: Zalo, FB, Web (https://...)"
+              className="flex-1 min-w-0 bg-transparent text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 outline-none font-semibold truncate"
             />
 
             {/* Quick Action 1: 3D <-> Scan 90deg Mode Toggle */}
@@ -338,7 +390,7 @@ export default function App() {
                 setViewMode(nextMode)
                 soundEngine.playMorphSound(nextMode === 'topDown')
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0 ${
                 viewMode === 'topDown'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'bg-white text-stone-800 hover:text-stone-900 border border-stone-200/90 shadow-xs'
@@ -363,7 +415,7 @@ export default function App() {
               type="button"
               onClick={() => handleExport(viewMode === 'topDown')}
               disabled={isExporting}
-              className="p-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white shadow-xs transition-all active:scale-95 flex items-center justify-center"
+              className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-stone-900 hover:bg-stone-800 text-white shadow-xs transition-all active:scale-95 shrink-0 flex items-center justify-center"
               title={`Tải ảnh QR (${exportQuality.toUpperCase()})`}
             >
               {isExporting ? (
@@ -375,20 +427,20 @@ export default function App() {
           </form>
 
           {/* Row 1.5: Quick Presets */}
-          <div className="flex items-center justify-between px-1 text-[11px] font-semibold text-stone-600">
-            <span className="opacity-75 text-[10px]">Gợi ý nhanh:</span>
-            <div className="flex items-center gap-1">
+          <div className="flex items-center justify-between px-1 text-[11px] font-semibold text-stone-600 gap-1.5">
+            <span className="opacity-75 text-[10px] shrink-0">Gợi ý nhanh:</span>
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
               {[
                 { name: 'Zalo', url: 'https://zalo.me/' },
                 { name: 'Facebook', url: 'https://facebook.com/' },
                 { name: 'Portfolio', url: 'https://btvdev03.github.io/' },
-                { name: 'Dự Án GitHub', url: 'https://github.com/btvdev03/season-qr' },
+                { name: 'GitHub', shortName: 'GitHub', url: 'https://github.com/btvdev03/season-qr' },
               ].map(({ name, url: presetUrl }) => (
                 <button
                   key={name}
                   type="button"
                   onClick={() => handleQuickPreset(presetUrl)}
-                  className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/80 text-[10px] font-semibold transition-all active:scale-95 shadow-2xs"
+                  className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/80 text-[10px] font-semibold transition-all active:scale-95 shadow-2xs whitespace-nowrap shrink-0"
                 >
                   {name}
                 </button>
@@ -397,7 +449,7 @@ export default function App() {
           </div>
 
           {/* Row 2: 4-Season Segmented Tab Switcher */}
-          <div className="flex items-center justify-between gap-1 p-1 rounded-2xl bg-stone-100 border border-stone-200/80 text-xs font-bold">
+          <div className="flex items-center justify-between gap-1 p-1 rounded-xl sm:rounded-2xl bg-stone-100 border border-stone-200/80 text-xs font-bold">
             {[
               { id: 'spring', label: 'Xuân', icon: '🌸', activeClass: 'bg-pink-100 text-pink-900 border-pink-300 shadow-xs' },
               { id: 'summer', label: 'Hạ', icon: '☀️', activeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 shadow-xs' },
@@ -409,7 +461,7 @@ export default function App() {
                 <button
                   key={s.id}
                   onClick={() => setSelectedSeason(s.id as SeasonKey)}
-                  className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl border border-transparent transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-transparent transition-all ${
                     isSelected
                       ? s.activeClass
                       : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
@@ -424,7 +476,7 @@ export default function App() {
             {/* Sound / Mute Toggle Button */}
             <button
               onClick={toggleSound}
-              className={`p-1.5 ml-0.5 rounded-xl transition-all ${
+              className={`p-1.5 ml-0.5 rounded-lg sm:rounded-xl transition-all shrink-0 ${
                 isMuted
                   ? 'text-stone-400 hover:text-stone-700'
                   : 'text-emerald-700 bg-white shadow-xs'
@@ -458,6 +510,38 @@ export default function App() {
                 >
                   ✕
                 </button>
+              </div>
+
+              {/* LIVE QR CREATION COUNTER STATS */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-50 to-orange-50 border border-amber-200/90 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                    <span className="text-amber-600 font-black">⚡</span> Thống Kê Số Lượt Tạo QR
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100/90 text-amber-900 border border-amber-200">
+                    <Activity className="w-3 h-3 text-amber-600 animate-pulse" />
+                    <span>Thời gian thực</span>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="p-2.5 rounded-xl bg-white/90 border border-amber-200/70 shadow-xs">
+                    <div className="text-[10px] text-stone-500 font-semibold uppercase tracking-wider">Toàn cầu</div>
+                    <div className="text-xl font-black text-amber-900 tracking-tight mt-0.5">
+                      {formatCount(globalQRCount)}
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white/90 border border-amber-200/70 shadow-xs">
+                    <div className="text-[10px] text-stone-500 font-semibold uppercase tracking-wider">Trên máy bạn</div>
+                    <div className="text-xl font-black text-stone-800 tracking-tight mt-0.5">
+                      {formatCount(userQRCount)}
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-amber-900/75 leading-relaxed">
+                  Tự động đếm và đồng bộ mỗi khi bạn hoặc người dùng nhập link / tạo mã QR mới.
+                </p>
               </div>
 
               {/* Setting 1: 3D Diorama Style Selection */}
