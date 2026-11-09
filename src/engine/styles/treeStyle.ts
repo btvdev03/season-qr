@@ -89,6 +89,7 @@ interface SeasonalDioramaPalette {
   barkTint: number;
   grassDark: string;
   grassMid: string;
+  grassLight: string;
   grassTip: string;
   flowerColors: string[];
   cloverColors: string[];
@@ -112,8 +113,9 @@ function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
         leafTexture: `${base}assets/leaves/oak_autumn.png`,
         barkTint: 0xfff2e6, // Rich dark Kyoto walnut bark
         grassDark: '#78350f',
-        grassMid: '#b45309',
-        grassTip: '#f59e0b',
+        grassMid: '#9a3412',
+        grassLight: '#d97706',
+        grassTip: '#fde047',
         flowerColors: ['#dc2626', '#ea580c', '#f59e0b', '#fbbf24', '#b91c1c'],
         cloverColors: ['#78350f', '#92400e', '#b45309', '#a16207'],
         fallenLeaves: ['#dc2626', '#ea580c', '#f59e0b', '#d97706', '#b91c1c', '#7f1d1d'],
@@ -131,7 +133,8 @@ function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
         barkTint: 0xfff0f5, // Warm cherry tree bark
         grassDark: '#14532d',
         grassMid: '#16a34a',
-        grassTip: '#4ade80',
+        grassLight: '#4ade80',
+        grassTip: '#bbf7d0',
         flowerColors: ['#ffffff', '#fbcfe8', '#f472b6', '#fda4af', '#f43f5e'],
         cloverColors: ['#16a34a', '#22c55e', '#4ade80'],
         fallenLeaves: ['#ffffff', '#fff1f2', '#fbcfe8', '#f472b6', '#fda4af'],
@@ -149,7 +152,8 @@ function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
         barkTint: 0xeef4fb, // Weathered dark winter birch/pine
         grassDark: '#1e293b',
         grassMid: '#334155',
-        grassTip: '#64748b',
+        grassLight: '#64748b',
+        grassTip: '#cbd5e1',
         flowerColors: ['#ffffff', '#bae6fd', '#e0f2fe', '#7dd3fc', '#cbd5e1'],
         cloverColors: ['#334155', '#475569', '#64748b'],
         fallenLeaves: ['#ffffff', '#f1f5f9', '#e2e8f0', '#bae6fd', '#cbd5e1'],
@@ -168,7 +172,8 @@ function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
         barkTint: 0xffffff, // Rich deep aged oak bark
         grassDark: '#14532d',
         grassMid: '#15803d',
-        grassTip: '#22c55e',
+        grassLight: '#22c55e',
+        grassTip: '#86efac',
         flowerColors: ['#ffffff', '#fde047', '#f59e0b', '#fbbf24', '#f472b6'],
         cloverColors: ['#14532d', '#15803d', '#16a34a', '#22c55e'],
         fallenLeaves: ['#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'],
@@ -207,25 +212,31 @@ function samplePaletteRamp(colors: string[], t: number): THREE.Color {
 function createMasterGrassBladeGeometry(): THREE.BufferGeometry {
   const geo = new THREE.BufferGeometry();
   const height = 1.0;
-  const baseWidth = 0.16;
-  const archBend = 0.32;
-  const hw = baseWidth / 2;
-  const midW = baseWidth * 0.45;
-  const midH = height * 0.52;
-  const midB = archBend * 0.45;
+  const baseW = 0.16;
+  const midW = 0.11;
+  const upperW = 0.055;
+  const bend = 0.38;
 
   const positions = new Float32Array([
-    -hw, 0, 0,
-     hw, 0, 0,
-    -midW, midH, midB,
-     midW, midH, midB,
-     0, height, archBend,
+    // Base tier (y = 0.0)
+    -baseW / 2, 0.0, 0.0,
+     baseW / 2, 0.0, 0.0,
+    // Mid tier (y = 0.42)
+    -midW / 2, 0.42 * height, bend * 0.18,
+     midW / 2, 0.42 * height, bend * 0.18,
+    // Upper tier (y = 0.78)
+    -upperW / 2, 0.78 * height, bend * 0.54,
+     upperW / 2, 0.78 * height, bend * 0.54,
+    // Tip apex (y = 1.0)
+     0.0, height, bend,
   ]);
 
   const indices = new Uint16Array([
     0, 1, 3,
     0, 3, 2,
-    2, 3, 4,
+    2, 3, 5,
+    2, 5, 4,
+    4, 5, 6,
   ]);
 
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -440,12 +451,12 @@ export const treeStyle: QRStyleGenerator = {
     rootGroup.add(patioGroup);
 
     // ==========================================
-    // 2. ULTRA-PERFORMANCE GPU INSTANCED BOTANICAL MEADOW (6 Draw Calls!)
+    // 2. ULTRA-PERFORMANCE GPU INSTANCED BOTANICAL MEADOW (LUSH & ANIMATED)
     // ==========================================
     const grassGroup = new THREE.Group();
     grassGroup.name = 'BotanicalGrassMeadow';
 
-    // Blade Instance Data
+    // Instance Containers
     interface MatrixColorInstance {
       matrix: THREE.Matrix4;
       color: THREE.Color;
@@ -457,13 +468,15 @@ export const treeStyle: QRStyleGenerator = {
     const mossInstances: THREE.Matrix4[] = [];
     const petalInstances: MatrixColorInstance[] = [];
 
+    // 4-Tier Seasonal Grass Gradients
     const colGrassDark = new THREE.Color(palette.grassDark);
     const colGrassMid = new THREE.Color(palette.grassMid);
+    const colGrassLight = new THREE.Color(palette.grassLight || palette.grassTip);
     const colGrassTip = new THREE.Color(palette.grassTip);
 
-    const flowerColors = palette.flowerColors.map((c) => new THREE.Color(c));
-    const cloverColors = palette.cloverColors.map((c) => new THREE.Color(c));
-    const fallenLeafColors = palette.fallenLeaves.map((c) => new THREE.Color(c));
+    const flowerColors = palette.flowerColors.map((c: string) => new THREE.Color(c));
+    const cloverColors = palette.cloverColors.map((c: string) => new THREE.Color(c));
+    const fallenLeafColors = palette.fallenLeaves.map((c: string) => new THREE.Color(c));
 
     const dummyObj = new THREE.Object3D();
 
@@ -475,13 +488,18 @@ export const treeStyle: QRStyleGenerator = {
       rotY: number,
       tiltX = 0
     ) => {
-      const s = heightScale * rng.range(0.9, 1.12);
+      const s = heightScale * rng.range(0.88, 1.15);
       dummyObj.position.set(x, paverBlockHeight, z);
-      dummyObj.rotation.set(tiltX + rng.range(-0.08, 0.08), rotY, rng.range(-0.08, 0.08));
-      dummyObj.scale.set(s * 0.9, s, s * 0.9);
+      dummyObj.rotation.set(tiltX + rng.range(-0.1, 0.1), rotY, rng.range(-0.1, 0.1));
+      dummyObj.scale.set(s * 0.95, s, s * 0.95);
       dummyObj.updateMatrix();
 
-      const col = matTier === 0 ? colGrassDark : (matTier === 1 ? colGrassMid : colGrassTip);
+      let col: THREE.Color;
+      if (matTier === 0) col = colGrassDark;
+      else if (matTier === 1) col = colGrassMid;
+      else if (matTier === 2) col = colGrassLight;
+      else col = colGrassTip;
+
       bladeInstances.push({
         matrix: dummyObj.matrix.clone(),
         color: col.clone(),
@@ -496,7 +514,7 @@ export const treeStyle: QRStyleGenerator = {
       tiltX = 0,
       tiltZ = 0
     ) => {
-      const s = sizeMult * rng.range(0.85, 1.15);
+      const s = sizeMult * rng.range(0.85, 1.18);
       dummyObj.position.set(x, y, z);
       dummyObj.rotation.set(tiltX, rng.angle(), tiltZ);
       dummyObj.scale.set(s, s, s);
@@ -509,7 +527,7 @@ export const treeStyle: QRStyleGenerator = {
       });
 
       // Flower Center Pollen Disk
-      dummyObj.position.set(x, y + 0.035 * s, z);
+      dummyObj.position.set(x, y + 0.038 * s, z);
       dummyObj.rotation.set(0, 0, 0);
       dummyObj.scale.set(s, s, s);
       dummyObj.updateMatrix();
@@ -531,10 +549,10 @@ export const treeStyle: QRStyleGenerator = {
     };
 
     const addMossMound = (x: number, z: number, sizeMult = 1) => {
-      const s = sizeMult * rng.range(0.85, 1.25);
+      const s = sizeMult * rng.range(0.85, 1.3);
       dummyObj.position.set(x, paverBlockHeight + 0.018, z);
       dummyObj.rotation.set(0, rng.angle(), 0);
-      dummyObj.scale.set(s, s * rng.range(0.8, 1.1), s);
+      dummyObj.scale.set(s, s * rng.range(0.75, 1.1), s);
       dummyObj.updateMatrix();
       mossInstances.push(dummyObj.matrix.clone());
     };
@@ -553,8 +571,10 @@ export const treeStyle: QRStyleGenerator = {
       });
     };
 
-    // a) Dense Corner Meadow Beds (All 4 corners of diorama patio)
-    const cornerOffset = halfScene * 0.92;
+    // -------------------------------------------------------------
+    // a) Ultra-Dense Corner Botanical Sanctuaries (All 4 Corners)
+    // -------------------------------------------------------------
+    const cornerOffset = halfScene * 0.94;
     const cornerPositions = [
       { cx: -cornerOffset, cz: -cornerOffset },
       { cx: cornerOffset, cz: -cornerOffset },
@@ -563,154 +583,208 @@ export const treeStyle: QRStyleGenerator = {
     ];
 
     for (const { cx, cz } of cornerPositions) {
-      // Tier 1: Outer framing arch blades (tall: 1.5 - 1.8m)
-      for (let b = 0; b < 18; b++) {
+      // Tier 1: Outer majestic arching plumes (tall: 1.5 - 2.1m)
+      for (let b = 0; b < 36; b++) {
         const angle = rng.angle();
-        const r = rng.range(0.7, 1.45);
+        const r = rng.range(0.65, 1.6);
         const bx = cx + Math.cos(angle) * r;
         const bz = cz + Math.sin(angle) * r;
-        const hScale = rng.chance(0.6) ? 1.75 : 1.45;
-        const matTier = rng.chance(0.55) ? 2 : 1;
+        const hScale = rng.chance(0.65) ? 1.85 : 1.5;
+        const matTier = rng.chance(0.55) ? 3 : 2;
         const rotY = angle + rng.range(-0.4, 0.4);
+        addGrassBlade(bx, bz, hScale, matTier, rotY, rng.range(-0.15, 0.15));
+      }
+
+      // Tier 2: Core lush meadow thicket (medium: 1.05 - 1.45m)
+      for (let b = 0; b < 55; b++) {
+        const angle = rng.angle();
+        const r = rng.range(0.25, 1.15);
+        const bx = cx + Math.cos(angle) * r;
+        const bz = cz + Math.sin(angle) * r;
+        const hScale = rng.chance(0.55) ? 1.35 : 1.05;
+        const matTier = rng.chance(0.35) ? 1 : rng.chance(0.5) ? 2 : 3;
+        const rotY = angle + rng.range(-0.35, 0.35);
         addGrassBlade(bx, bz, hScale, matTier, rotY, rng.range(-0.12, 0.12));
       }
 
-      // Tier 2: Core meadow bed (medium: 0.9 - 1.25m)
-      for (let b = 0; b < 24; b++) {
+      // Tier 3: Soft velvet understory carpet (short: 0.65 - 0.95m)
+      for (let b = 0; b < 40; b++) {
         const angle = rng.angle();
-        const r = rng.range(0.2, 0.85);
+        const r = rng.range(0.35, 1.55);
         const bx = cx + Math.cos(angle) * r;
         const bz = cz + Math.sin(angle) * r;
-        const hScale = rng.chance(0.5) ? 1.15 : 0.92;
-        const matTier = rng.chance(0.3) ? 0 : rng.chance(0.5) ? 1 : 2;
-        const rotY = angle + rng.range(-0.35, 0.35);
-        addGrassBlade(bx, bz, hScale, matTier, rotY, rng.range(-0.1, 0.1));
-      }
-
-      // Tier 3: Inner transition blades (short: 0.55 - 0.85m)
-      for (let b = 0; b < 16; b++) {
-        const angle = rng.angle();
-        const r = rng.range(0.5, 1.5);
-        const bx = cx + Math.cos(angle) * r;
-        const bz = cz + Math.sin(angle) * r;
-        const hScale = rng.chance(0.6) ? 0.65 : 0.82;
-        const matTier = rng.chance(0.5) ? 1 : 2;
+        const hScale = rng.range(0.65, 0.95);
+        const matTier = rng.chance(0.5) ? 0 : 1;
         addGrassBlade(bx, bz, hScale, matTier, rng.angle(), rng.range(-0.08, 0.08));
       }
 
-      // Corner Wildflowers
-      const fCount = rng.int(4, 6);
+      // Corner Blooming Wildflowers
+      const fCount = rng.int(10, 14);
       for (let f = 0; f < fCount; f++) {
-        const fx = cx + rng.range(-1.0, 1.0);
-        const fz = cz + rng.range(-1.0, 1.0);
-        const fy = paverBlockHeight + rng.range(0.28, 0.62);
-        addWildflower(fx, fy, fz, rng.range(0.85, 1.15), rng.range(-0.2, 0.2), rng.range(-0.2, 0.2));
+        const fx = cx + rng.range(-1.25, 1.25);
+        const fz = cz + rng.range(-1.25, 1.25);
+        const fy = paverBlockHeight + rng.range(0.3, 0.72);
+        addWildflower(fx, fy, fz, rng.range(0.9, 1.25), rng.range(-0.22, 0.22), rng.range(-0.22, 0.22));
       }
 
-      // Corner Clovers
-      const clovCount = rng.int(5, 7);
+      // Corner Shamrock & Clover Colonies
+      const clovCount = rng.int(12, 16);
       for (let cl = 0; cl < clovCount; cl++) {
-        addClover(cx + rng.range(-1.3, 1.3), cz + rng.range(-1.3, 1.3), rng.range(0.8, 1.1));
+        addClover(cx + rng.range(-1.45, 1.45), cz + rng.range(-1.45, 1.45), rng.range(0.85, 1.2));
       }
 
-      // Corner Moss
-      const mCount = rng.int(3, 4);
+      // Velvety Moss Cushions
+      const mCount = rng.int(5, 7);
       for (let m = 0; m < mCount; m++) {
-        addMossMound(cx + rng.range(-0.8, 0.8), cz + rng.range(-0.8, 0.8), rng.range(0.9, 1.2));
+        addMossMound(cx + rng.range(-0.95, 0.95), cz + rng.range(-0.95, 0.95), rng.range(0.95, 1.35));
       }
 
-      // Corner Fallen Petals
-      const petCount = rng.int(8, 12);
+      // Seasonal Petal Showers
+      const petCount = rng.int(16, 24);
       for (let p = 0; p < petCount; p++) {
-        addFallenPetal(cx + rng.range(-1.8, 1.8), cz + rng.range(-1.8, 1.8), rng.range(0.8, 1.2));
+        addFallenPetal(cx + rng.range(-1.8, 1.8), cz + rng.range(-1.8, 1.8), rng.range(0.85, 1.25));
       }
     }
 
-    // b) Trunk Root Collar Garden (Radius ~1.15 to 2.8)
-    const trunkBlades = 75;
-    for (let b = 0; b < trunkBlades; b++) {
-      const angle = rng.angle();
-      const r = rng.range(1.15, 2.75);
-      const bx = Math.cos(angle) * r;
-      const bz = Math.sin(angle) * r;
-      const hScale = r < 1.6 ? rng.range(0.65, 0.85) : rng.range(0.95, 1.35);
-      const matTier = r < 1.5 ? 0 : rng.chance(0.55) ? 1 : 2;
-      const rotY = angle + rng.range(-0.45, 0.45);
-      addGrassBlade(bx, bz, hScale, matTier, rotY, rng.range(-0.14, 0.14));
-    }
-
-    for (let m = 0; m < 10; m++) {
-      const angle = (m / 10) * Math.PI * 2 + rng.range(-0.25, 0.25);
-      const r = rng.range(0.95, 1.75);
-      addMossMound(Math.cos(angle) * r, Math.sin(angle) * r, rng.range(0.85, 1.15));
-    }
-
-    for (let f = 0; f < 8; f++) {
-      const angle = rng.angle();
-      const r = rng.range(1.3, 2.5);
-      const fx = Math.cos(angle) * r;
-      const fz = Math.sin(angle) * r;
-      const fy = paverBlockHeight + rng.range(0.22, 0.52);
-      addWildflower(fx, fy, fz, rng.range(0.85, 1.1), rng.range(-0.2, 0.2), rng.range(-0.2, 0.2));
-    }
-
-    for (let cl = 0; cl < 12; cl++) {
-      const angle = rng.angle();
-      const r = rng.range(1.1, 2.8);
-      addClover(Math.cos(angle) * r, Math.sin(angle) * r, rng.range(0.8, 1.1));
-    }
-
-    for (let p = 0; p < 32; p++) {
-      const angle = rng.angle();
-      const r = rng.range(0.85, 3.8);
-      addFallenPetal(Math.cos(angle) * r, Math.sin(angle) * r, rng.range(0.85, 1.2));
-    }
-
-    // c) Perimeter Border Tufts
-    const borderOffsets = [-7.2, -3.6, 0.0, 3.6, 7.2];
+    // -------------------------------------------------------------
+    // b) Dense Perimeter Garden Borders (Framing All 4 Edges)
+    // -------------------------------------------------------------
+    const borderOffsets = [-8.8, -7.0, -5.2, -3.5, -1.8, 0.0, 1.8, 3.5, 5.2, 7.0, 8.8];
     for (const pos of borderOffsets) {
-      const spawnTuft = (bx: number, bz: number, edgeAngle: number) => {
-        const count = rng.int(12, 16);
+      const spawnBorderTuft = (bx: number, bz: number, edgeAngle: number) => {
+        const count = rng.int(14, 18);
         for (let b = 0; b < count; b++) {
-          const r = rng.range(0.08, 0.85);
+          const r = rng.range(0.05, 0.82);
           const th = rng.angle();
           const px = bx + Math.cos(th) * r;
           const pz = bz + Math.sin(th) * r;
-          const hScale = rng.range(0.85, 1.25);
-          const matTier = rng.chance(0.5) ? 1 : 2;
-          const rotY = edgeAngle + rng.range(-0.6, 0.6);
-          addGrassBlade(px, pz, hScale, matTier, rotY, rng.range(-0.12, 0.12));
+          const hScale = rng.range(0.95, 1.55);
+          const matTier = rng.chance(0.35) ? 1 : rng.chance(0.55) ? 2 : 3;
+          const rotY = edgeAngle + rng.range(-0.65, 0.65);
+          addGrassBlade(px, pz, hScale, matTier, rotY, rng.range(-0.14, 0.14));
         }
 
-        if (rng.chance(0.6)) {
-          const fy = paverBlockHeight + rng.range(0.25, 0.48);
-          addWildflower(bx + rng.range(-0.35, 0.35), fy, bz + rng.range(-0.35, 0.35), 0.9);
+        if (rng.chance(0.7)) {
+          const fy = paverBlockHeight + rng.range(0.28, 0.55);
+          addWildflower(bx + rng.range(-0.4, 0.4), fy, bz + rng.range(-0.4, 0.4), 0.95);
         }
-        if (rng.chance(0.55)) {
-          addClover(bx + rng.range(-0.5, 0.5), bz + rng.range(-0.5, 0.5), 0.9);
+        if (rng.chance(0.65)) {
+          addClover(bx + rng.range(-0.55, 0.55), bz + rng.range(-0.55, 0.55), 0.95);
         }
-        if (rng.chance(0.4)) {
-          addMossMound(bx + rng.range(-0.4, 0.4), bz + rng.range(-0.4, 0.4), 0.9);
+        if (rng.chance(0.45)) {
+          addMossMound(bx + rng.range(-0.45, 0.45), bz + rng.range(-0.45, 0.45), 0.95);
         }
-        for (let p = 0; p < rng.int(2, 4); p++) {
-          addFallenPetal(bx + rng.range(-0.9, 0.9), bz + rng.range(-0.9, 0.9), 0.9);
+        for (let p = 0; p < rng.int(2, 5); p++) {
+          addFallenPetal(bx + rng.range(-0.85, 0.85), bz + rng.range(-0.85, 0.85), 0.9);
         }
       };
 
       const j = rng.range(-0.25, 0.25);
-      spawnTuft(-cornerOffset, pos + j, Math.PI);
-      spawnTuft(cornerOffset, pos + j, 0);
-      spawnTuft(pos + j, -cornerOffset, -Math.PI / 2);
-      spawnTuft(pos + j, cornerOffset, Math.PI / 2);
+      spawnBorderTuft(-cornerOffset, pos + j, Math.PI);
+      spawnBorderTuft(cornerOffset, pos + j, 0);
+      spawnBorderTuft(pos + j, -cornerOffset, -Math.PI / 2);
+      spawnBorderTuft(pos + j, cornerOffset, Math.PI / 2);
     }
 
-    // Build the 6 GPU Instanced Meshes (Ultra Smooth 60 FPS)
+    // -------------------------------------------------------------
+    // c) Oak Tree Trunk Root Basin (Lush Circular Grove)
+    // -------------------------------------------------------------
+    const trunkBlades = 180;
+    for (let b = 0; b < trunkBlades; b++) {
+      const angle = rng.angle();
+      const r = rng.range(1.05, 3.2);
+      const bx = Math.cos(angle) * r;
+      const z = Math.sin(angle) * r;
+      const hScale = r < 1.6 ? rng.range(0.7, 0.95) : rng.range(1.05, 1.5);
+      const matTier = r < 1.5 ? 0 : rng.chance(0.4) ? 1 : rng.chance(0.6) ? 2 : 3;
+      const rotY = angle + rng.range(-0.5, 0.5);
+      addGrassBlade(bx, z, hScale, matTier, rotY, rng.range(-0.16, 0.16));
+    }
+
+    for (let m = 0; m < 18; m++) {
+      const angle = (m / 18) * Math.PI * 2 + rng.range(-0.2, 0.2);
+      const r = rng.range(0.9, 1.95);
+      addMossMound(Math.cos(angle) * r, Math.sin(angle) * r, rng.range(0.9, 1.35));
+    }
+
+    for (let f = 0; f < 22; f++) {
+      const angle = rng.angle();
+      const r = rng.range(1.2, 2.9);
+      const fx = Math.cos(angle) * r;
+      const fz = Math.sin(angle) * r;
+      const fy = paverBlockHeight + rng.range(0.24, 0.58);
+      addWildflower(fx, fy, fz, rng.range(0.9, 1.2), rng.range(-0.2, 0.2), rng.range(-0.2, 0.2));
+    }
+
+    for (let cl = 0; cl < 28; cl++) {
+      const angle = rng.angle();
+      const r = rng.range(1.05, 3.1);
+      addClover(Math.cos(angle) * r, Math.sin(angle) * r, rng.range(0.85, 1.15));
+    }
+
+    for (let p = 0; p < 50; p++) {
+      const angle = rng.angle();
+      const r = rng.range(0.75, 4.2);
+      addFallenPetal(Math.cos(angle) * r, Math.sin(angle) * r, rng.range(0.85, 1.3));
+    }
+
+    // -------------------------------------------------------------
+    // d) Subtle Paver Edge & Joint Tufts (Organic Grout Overgrowth)
+    // -------------------------------------------------------------
+    for (let i = 0; i < 35; i++) {
+      const edgeX = rng.chance(0.5) ? rng.range(-10.5, -7.5) : rng.range(7.5, 10.5);
+      const edgeZ = rng.range(-10.5, 10.5);
+      const microCount = rng.int(3, 5);
+      for (let mb = 0; mb < microCount; mb++) {
+        const px = edgeX + rng.range(-0.18, 0.18);
+        const pz = edgeZ + rng.range(-0.18, 0.18);
+        addGrassBlade(px, pz, rng.range(0.45, 0.75), rng.chance(0.5) ? 0 : 1, rng.angle(), 0.05);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 4. GPU Shaders & Wind Animation (Buttery Smooth 60 FPS)
+    // -------------------------------------------------------------
+    const windUniforms = { uTime: { value: 0 } };
+
+    // Master Grass Blade Mesh
     const masterBladeGeo = createMasterGrassBladeGeometry();
     const grassMasterMat = new THREE.MeshStandardMaterial({
-      roughness: 0.6,
+      roughness: 0.55,
       side: THREE.DoubleSide,
       flatShading: true,
     });
+
+    grassMasterMat.onBeforeCompile = (shader: any) => {
+      shader.uniforms.uTime = windUniforms.uTime;
+      shader.vertexShader = `uniform float uTime;\n` + shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `
+        #include <begin_vertex>
+        #ifdef USE_INSTANCING
+          vec3 instPos = vec3(instanceMatrix[3].x, instanceMatrix[3].y, instanceMatrix[3].z);
+          // Flowing spatial traveling wave
+          float spatialPhase = (instPos.x * 0.42 + instPos.z * 0.58) + uTime * 2.5;
+          float windWave = sin(spatialPhase) * 0.72 + sin(spatialPhase * 2.3 + instPos.x * 0.35) * 0.28;
+          // High-frequency tip flutter
+          float flutter = sin(uTime * 4.6 + instPos.x * 1.3 + instPos.z * 1.5) * 0.12;
+          // Slow breathing gust envelope
+          float gust = sin(uTime * 1.15 + instPos.z * 0.25) * 0.2;
+          float totalSway = windWave + flutter + gust;
+
+          // Root (y=0) is stationary; tip sways nonlinearly
+          float h = max(0.0, position.y);
+          float bendFactor = pow(h, 1.45);
+
+          transformed.x += totalSway * 0.32 * bendFactor;
+          transformed.z += totalSway * 0.22 * bendFactor;
+          transformed.y -= abs(totalSway) * 0.09 * bendFactor;
+        #endif
+        `
+      );
+    };
+
     const grassInstancedMesh = new THREE.InstancedMesh(masterBladeGeo, grassMasterMat, bladeInstances.length);
     grassInstancedMesh.castShadow = true;
     for (let i = 0; i < bladeInstances.length; i++) {
@@ -721,13 +795,45 @@ export const treeStyle: QRStyleGenerator = {
     if (grassInstancedMesh.instanceColor) grassInstancedMesh.instanceColor.needsUpdate = true;
     grassGroup.add(grassInstancedMesh);
 
-    // Flowers (Petals + Pollen Centers)
+    // Flowers (Petals + Pollen Centers) with Gentle Wind Sway
     const masterFlowerGeo = createWildflowerGeometry(0.3);
     const flowerPetalMat = new THREE.MeshStandardMaterial({
       roughness: 0.45,
       side: THREE.DoubleSide,
       flatShading: true,
     });
+
+    const flowerCenterMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color('#fbbf24'),
+      emissive: new THREE.Color('#d97706'),
+      emissiveIntensity: 0.25,
+      roughness: 0.35,
+      flatShading: true,
+    });
+
+    const applyFlowerWind = (mat: THREE.MeshStandardMaterial) => {
+      mat.onBeforeCompile = (shader: any) => {
+        shader.uniforms.uTime = windUniforms.uTime;
+        shader.vertexShader = `uniform float uTime;\n` + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace(
+          '#include <begin_vertex>',
+          `
+          #include <begin_vertex>
+          #ifdef USE_INSTANCING
+            vec3 instPos = vec3(instanceMatrix[3].x, instanceMatrix[3].y, instanceMatrix[3].z);
+            float spatialPhase = (instPos.x * 0.42 + instPos.z * 0.58) + uTime * 2.5;
+            float flowerSway = sin(spatialPhase) * 0.55 + sin(spatialPhase * 2.1) * 0.22;
+            transformed.x += flowerSway * 0.15;
+            transformed.z += flowerSway * 0.11;
+            transformed.y -= abs(flowerSway) * 0.04;
+          #endif
+          `
+        );
+      };
+    };
+    applyFlowerWind(flowerPetalMat);
+    applyFlowerWind(flowerCenterMat);
+
     const flowerPetalsMesh = new THREE.InstancedMesh(masterFlowerGeo, flowerPetalMat, flowerPetalInstances.length);
     flowerPetalsMesh.castShadow = true;
     for (let i = 0; i < flowerPetalInstances.length; i++) {
@@ -739,13 +845,6 @@ export const treeStyle: QRStyleGenerator = {
     grassGroup.add(flowerPetalsMesh);
 
     const masterFlowerCenterGeo = new THREE.SphereGeometry(0.065, 5, 4);
-    const flowerCenterMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color('#fbbf24'),
-      emissive: new THREE.Color('#d97706'),
-      emissiveIntensity: 0.22,
-      roughness: 0.35,
-      flatShading: true,
-    });
     const flowerCentersMesh = new THREE.InstancedMesh(masterFlowerCenterGeo, flowerCenterMat, flowerCenterInstances.length);
     for (let i = 0; i < flowerCenterInstances.length; i++) {
       flowerCentersMesh.setMatrixAt(i, flowerCenterInstances[i]);
@@ -753,13 +852,31 @@ export const treeStyle: QRStyleGenerator = {
     flowerCentersMesh.instanceMatrix.needsUpdate = true;
     grassGroup.add(flowerCentersMesh);
 
-    // Clovers
+    // Clovers with Flutter Wind
     const masterCloverGeo = createCloverGeometry(0.24);
     const cloverMat = new THREE.MeshStandardMaterial({
       roughness: 0.55,
       side: THREE.DoubleSide,
       flatShading: true,
     });
+    cloverMat.onBeforeCompile = (shader: any) => {
+      shader.uniforms.uTime = windUniforms.uTime;
+      shader.vertexShader = `uniform float uTime;\n` + shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `
+        #include <begin_vertex>
+        #ifdef USE_INSTANCING
+          vec3 instPos = vec3(instanceMatrix[3].x, instanceMatrix[3].y, instanceMatrix[3].z);
+          float spatialPhase = (instPos.x * 0.45 + instPos.z * 0.6) + uTime * 2.2;
+          float cloverSway = sin(spatialPhase) * 0.08;
+          transformed.x += cloverSway;
+          transformed.z += cloverSway * 0.75;
+        #endif
+        `
+      );
+    };
+
     const cloverInstancedMesh = new THREE.InstancedMesh(masterCloverGeo, cloverMat, cloverInstances.length);
     cloverInstancedMesh.castShadow = true;
     for (let i = 0; i < cloverInstances.length; i++) {
@@ -807,7 +924,6 @@ export const treeStyle: QRStyleGenerator = {
 
     rootGroup.add(grassGroup);
 
-    // ==========================================
     // 3. REALISTIC PROCEDURAL OAK TREE (@dgreenheck/ez-tree)
     // ==========================================
     const treeGroup = new THREE.Group();
@@ -946,6 +1062,8 @@ export const treeStyle: QRStyleGenerator = {
     let lastProgress = -1;
 
     rootGroup.updateMorph = (progress: number, time: number = 0) => {
+      // Advance real-time GPU wind physics
+      windUniforms.uTime.value = time;
       const p = THREE.MathUtils.clamp(progress, 0, 1);
       const isProgressChanging = Math.abs(p - lastProgress) > 0.001;
 
