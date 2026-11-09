@@ -103,11 +103,14 @@ interface SeasonalDioramaPalette {
 }
 
 function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
+  const base = import.meta.env.BASE_URL.endsWith('/')
+    ? import.meta.env.BASE_URL
+    : `${import.meta.env.BASE_URL}/`;
   switch (seasonId) {
     case 'autumn':
       return {
-        leafTexture: '/assets/leaves/oak_autumn.png',
-        barkTint: 0x301a12, // Rich dark Kyoto walnut bark
+        leafTexture: `${base}assets/leaves/oak_autumn.png`,
+        barkTint: 0xfff2e6, // Rich dark Kyoto walnut bark
         grassDark: '#78350f',
         grassMid: '#b45309',
         grassTip: '#f59e0b',
@@ -124,8 +127,8 @@ function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
       };
     case 'spring':
       return {
-        leafTexture: '/assets/leaves/oak_spring.png',
-        barkTint: 0x3d211a, // Warm cherry tree bark
+        leafTexture: `${base}assets/leaves/oak_spring.png`,
+        barkTint: 0xfff0f5, // Warm cherry tree bark
         grassDark: '#14532d',
         grassMid: '#16a34a',
         grassTip: '#4ade80',
@@ -142,8 +145,8 @@ function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
       };
     case 'winter':
       return {
-        leafTexture: '/assets/leaves/oak_winter.png',
-        barkTint: 0x1e242d, // Weathered dark winter birch/pine
+        leafTexture: `${base}assets/leaves/oak_winter.png`,
+        barkTint: 0xeef4fb, // Weathered dark winter birch/pine
         grassDark: '#1e293b',
         grassMid: '#334155',
         grassTip: '#64748b',
@@ -161,8 +164,8 @@ function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
     case 'summer':
     default:
       return {
-        leafTexture: '/assets/leaves/oak_summer.png',
-        barkTint: 0x422a1b, // Rich deep aged oak bark
+        leafTexture: `${base}assets/leaves/oak_summer.png`,
+        barkTint: 0xffffff, // Rich deep aged oak bark
         grassDark: '#14532d',
         grassMid: '#15803d',
         grassTip: '#22c55e',
@@ -824,20 +827,27 @@ export const treeStyle: QRStyleGenerator = {
     realisticTree.position.set(0, paverBlockHeight, 0);
 
     const textureLoader = new THREE.TextureLoader();
-    const seasonalLeafTexture = textureLoader.load(palette.leafTexture);
-    seasonalLeafTexture.colorSpace = THREE.SRGBColorSpace;
-
-    if (realisticTree.leavesMesh && realisticTree.leavesMesh.material) {
-      const leafMat = realisticTree.leavesMesh.material as any;
-      leafMat.map = seasonalLeafTexture;
-      leafMat.color.set(0xffffff);
-      if ('shininess' in leafMat) {
-        leafMat.shininess = 3;
-        leafMat.specular = new THREE.Color(0x080808);
+    textureLoader.load(
+      palette.leafTexture,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        if (realisticTree.leavesMesh && realisticTree.leavesMesh.material) {
+          const leafMat = realisticTree.leavesMesh.material as any;
+          leafMat.map = tex;
+          leafMat.color.set(0xffffff);
+          if ('shininess' in leafMat) {
+            leafMat.shininess = 3;
+            leafMat.specular = new THREE.Color(0x080808);
+          }
+          leafMat.alphaTest = 0.28;
+          leafMat.needsUpdate = true;
+        }
+      },
+      undefined,
+      (err) => {
+        console.warn('Could not load seasonal leaf texture, keeping lush base foliage:', palette.leafTexture, err);
       }
-      leafMat.alphaTest = 0.28;
-      leafMat.needsUpdate = true;
-    }
+    );
 
     realisticTree.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
