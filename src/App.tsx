@@ -286,14 +286,14 @@ export default function App() {
       </div>
 
       {/* 4. FLOATING PERSPECTIVE HINT PILL */}
-      <div className="fixed bottom-36 sm:bottom-32 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+      <div className="fixed bottom-48 sm:bottom-44 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
         <button
           onClick={() => {
             const nextMode = viewMode === 'isometric' ? 'topDown' : 'isometric'
             setViewMode(nextMode)
             soundEngine.playMorphSound(nextMode === 'topDown')
           }}
-          className="group flex items-center gap-2 px-5 py-2 rounded-full bg-white/90 hover:bg-white text-stone-800 shadow-md hover:shadow-lg border border-stone-200/90 backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 text-xs font-bold"
+          className="group flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/95 hover:bg-white text-stone-800 shadow-lg hover:shadow-xl border border-stone-200/90 backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 text-xs font-bold"
         >
           {viewMode === 'isometric' ? (
             <>
@@ -302,8 +302,8 @@ export default function App() {
             </>
           ) : (
             <>
-              <RotateCcw className="w-3.5 h-3.5 text-stone-700" />
-              <span>Chạm để quay lại Cây Bốn Mùa 3D</span>
+              <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Tap to see the tree (Xem cây 3D)</span>
             </>
           )}
         </button>

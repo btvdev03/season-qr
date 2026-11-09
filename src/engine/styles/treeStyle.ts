@@ -189,21 +189,200 @@ function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
 }
 
 /**
- * Samples smoothly along an array of colors given normalized position t in [0, 1]
+ * Calculates distance from point (px, py) to segment (x1, y1)-(x2, y2)
  */
-function samplePaletteRamp(colors: string[], t: number): THREE.Color {
-  if (colors.length === 0) return new THREE.Color('#000000');
-  if (colors.length === 1) return new THREE.Color(colors[0]);
-  const clamped = THREE.MathUtils.clamp(t, 0, 1);
-  const scaled = clamped * (colors.length - 1);
-  const idx = Math.floor(scaled);
-  const frac = scaled - idx;
-  if (idx >= colors.length - 1) {
-    return new THREE.Color(colors[colors.length - 1]);
+function distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
+  const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+  if (l2 === 0) return Math.hypot(px - x1, py - y1);
+  let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
+}
+
+/**
+ * High-performance deterministic coordinate hash
+ */
+function hash2D(r: number, c: number): number {
+  let h = (r * 374761393 + c * 668265263) ^ 0x5bf03635;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/**
+ * Returns warm natural ivory/stone tone for light modules in 90° scan mode
+ */
+function getSeasonalPaverScanColor(seasonId: string, r: number, c: number): THREE.Color {
+  const rnd = hash2D(r, c);
+  let tones: string[];
+  if (seasonId === 'spring') {
+    tones = ['#fff7f9', '#fdf2f5', '#faedf2', '#fff0f4'];
+  } else if (seasonId === 'autumn') {
+    tones = ['#fdf8f0', '#f9f2e4', '#f5ebd8', '#fdf6eb'];
+  } else if (seasonId === 'winter') {
+    tones = ['#f6f9fc', '#edf3f8', '#e6eef5', '#f3f7fb'];
+  } else {
+    // Summer (Soft warm ivory cream matching user reference photo)
+    tones = ['#f6f4ee', '#f4f1e8', '#ede9df', '#f8f6f0', '#eae5da'];
   }
-  const c1 = new THREE.Color(colors[idx]);
-  const c2 = new THREE.Color(colors[idx + 1]);
-  return c1.lerp(c2, frac);
+  return new THREE.Color(tones[Math.floor(rnd * tones.length)]);
+}
+
+/**
+ * Procedural Pixel-Art Tree QR Code Coloring for dark modules
+ * Projects organic tree canopy, branching boughs, trunk, and root basin
+ */
+function getSeasonalTreeScanColor(
+  seasonId: string,
+  r: number,
+  c: number,
+  N: number,
+  isFinder: boolean
+): THREE.Color {
+  const rnd = hash2D(r, c);
+  const rnd2 = hash2D(r * 11 + 17, c * 19 + 23);
+
+  // 1. Authoritative Finder Corners
+  if (isFinder) {
+    if (seasonId === 'spring') {
+      const greens = ['#4a0418', '#701a35', '#831843', '#500720'];
+      return new THREE.Color(greens[Math.floor(rnd * greens.length)]);
+    }
+    if (seasonId === 'autumn') {
+      const greens = ['#380505', '#450a0a', '#7f1d1d', '#580808'];
+      return new THREE.Color(greens[Math.floor(rnd * greens.length)]);
+    }
+    if (seasonId === 'winter') {
+      const greens = ['#020617', '#091024', '#0f172a', '#0b1329'];
+      return new THREE.Color(greens[Math.floor(rnd * greens.length)]);
+    }
+    // Summer finders: Deep forest & emerald greens
+    const greens = ['#14532d', '#15803d', '#166534', '#0f381e'];
+    return new THREE.Color(greens[Math.floor(rnd * greens.length)]);
+  }
+
+  // 2. Normalized tree space coordinates [-1, 1]
+  const cx = (N - 1) / 2;
+  const cy = (N - 1) / 2;
+  const u = (c - cx) / cx;
+  const v = (r - cy) / cy;
+
+  // 3. Trunk & Primary Boughs
+  const trunkWidth = 0.09 + Math.max(0, v) * 0.08;
+  const inMainTrunk = Math.abs(u) <= trunkWidth && v >= -0.05 && v <= 0.85;
+
+  const dLeftBough = distToSegment(u, v, 0.0, 0.12, -0.42, -0.16);
+  const dRightBough = distToSegment(u, v, 0.0, 0.12, 0.42, -0.16);
+  const dLeftFork = distToSegment(u, v, -0.15, -0.05, -0.30, -0.42);
+  const dRightFork = distToSegment(u, v, 0.15, -0.05, 0.30, -0.42);
+
+  const minBranchDist = Math.min(dLeftBough, dRightBough, dLeftFork, dRightFork);
+  const inBranch = minBranchDist < 0.075 && (rnd < 0.75 || minBranchDist < 0.045);
+
+  if (inMainTrunk || inBranch) {
+    if (seasonId === 'spring') {
+      if (rnd < 0.45) {
+        const bark = ['#3e1704', '#542009', '#6f2c0d', '#854d0e'];
+        return new THREE.Color(bark[Math.floor(rnd2 * bark.length)]);
+      }
+      const deepFoliage = ['#701a35', '#831843', '#9d174d'];
+      return new THREE.Color(deepFoliage[Math.floor(rnd2 * deepFoliage.length)]);
+    }
+    if (seasonId === 'autumn') {
+      if (rnd < 0.45) {
+        const bark = ['#3b1a08', '#4d220b', '#652e0f', '#78350f'];
+        return new THREE.Color(bark[Math.floor(rnd2 * bark.length)]);
+      }
+      const deepFoliage = ['#450a0a', '#7f1d1d', '#991b1b'];
+      return new THREE.Color(deepFoliage[Math.floor(rnd2 * deepFoliage.length)]);
+    }
+    if (seasonId === 'winter') {
+      if (rnd < 0.45) {
+        const bark = ['#1e293b', '#334155', '#475569', '#1f2937'];
+        return new THREE.Color(bark[Math.floor(rnd2 * bark.length)]);
+      }
+      const deepFoliage = ['#0c2340', '#0f3854', '#1e3a8a'];
+      return new THREE.Color(deepFoliage[Math.floor(rnd2 * deepFoliage.length)]);
+    }
+    // Summer: Wood bark naturally interwoven with moss and foliage
+    if (rnd < 0.35) {
+      const bark = ['#3f2212', '#5c381c', '#78350f', '#92400e', '#854d0e', '#a16207'];
+      return new THREE.Color(bark[Math.floor(rnd2 * bark.length)]);
+    }
+    const deepFoliage = ['#14532d', '#166534', '#15803d', '#65a30d'];
+    return new THREE.Color(deepFoliage[Math.floor(rnd2 * deepFoliage.length)]);
+  }
+
+  // 4. Canopy Multi-lobe Volume
+  const canopyX = 0.0;
+  const canopyY = -0.18;
+  const dx = (u - canopyX) / 0.85;
+  const dy = (v - canopyY) / 0.68;
+  const canopyDist = Math.sqrt(dx * dx + dy * dy);
+
+  const dPuff1 = Math.hypot((u + 0.35) / 0.45, (v + 0.30) / 0.38);
+  const dPuff2 = Math.hypot((u - 0.35) / 0.45, (v + 0.30) / 0.38);
+  const dPuffTop = Math.hypot(u / 0.48, (v + 0.55) / 0.35);
+
+  const minPuff = Math.min(canopyDist, dPuff1, dPuff2, dPuffTop);
+  const leafNoise = (rnd - 0.5) * 0.32 + (rnd2 - 0.5) * 0.18;
+  const effectiveCanopy = minPuff + leafNoise;
+
+  if (effectiveCanopy < 1.05 && v < 0.65) {
+    const sunFactor = Math.max(0, Math.min(1, (-v * 0.55 + 0.45) + (rnd - 0.5) * 0.35));
+
+    if (seasonId === 'spring') {
+      if (rnd > 0.85) return new THREE.Color('#f472b6'); // bright blossom highlight
+      const ramp = ['#701a35', '#831843', '#9d174d', '#be185d', '#c2185b', '#db2777', '#ec4899', '#f472b6'];
+      const idx = Math.floor(sunFactor * ramp.length);
+      return new THREE.Color(ramp[Math.min(ramp.length - 1, Math.max(0, idx))]);
+    }
+    if (seasonId === 'autumn') {
+      if (rnd > 0.84) return new THREE.Color('#fbbf24'); // golden ginkgo highlight
+      const ramp = ['#450a0a', '#7f1d1d', '#991b1b', '#b91c1c', '#c2410c', '#ea580c', '#d97706', '#f59e0b'];
+      const idx = Math.floor(sunFactor * ramp.length);
+      return new THREE.Color(ramp[Math.min(ramp.length - 1, Math.max(0, idx))]);
+    }
+    if (seasonId === 'winter') {
+      if (rnd > 0.85) return new THREE.Color('#7dd3fc'); // ice crystal spark
+      const ramp = ['#0c2340', '#0f3854', '#1e3a8a', '#1d4ed8', '#0369a1', '#0284c7', '#38bdf8', '#64748b'];
+      const idx = Math.floor(sunFactor * ramp.length);
+      return new THREE.Color(ramp[Math.min(ramp.length - 1, Math.max(0, idx))]);
+    }
+    // Summer (Matching user's reference photo)
+    if (rnd > 0.84) {
+      const khaki = ['#854d0e', '#a16207', '#92400e', '#a8884d'];
+      return new THREE.Color(khaki[Math.floor(rnd2 * khaki.length)]);
+    }
+    const ramp = ['#0f381e', '#14532d', '#166534', '#15803d', '#16a34a', '#22c55e', '#65a30d', '#84cc16'];
+    const idx = Math.floor(sunFactor * ramp.length);
+    return new THREE.Color(ramp[Math.min(ramp.length - 1, Math.max(0, idx))]);
+  }
+
+  // 5. Ground / Basin / Roots
+  if (v >= 0.65) {
+    if (seasonId === 'spring') {
+      const g = ['#14532d', '#15803d', '#166534', '#831843', '#be185d'];
+      return new THREE.Color(g[Math.floor(rnd2 * g.length)]);
+    }
+    if (seasonId === 'autumn') {
+      const g = ['#450a0a', '#7f1d1d', '#78350f', '#9a3412', '#b45309'];
+      return new THREE.Color(g[Math.floor(rnd2 * g.length)]);
+    }
+    if (seasonId === 'winter') {
+      const g = ['#091427', '#0f172a', '#1e293b', '#334155'];
+      return new THREE.Color(g[Math.floor(rnd2 * g.length)]);
+    }
+    // Summer ground
+    if (rnd > 0.85) return new THREE.Color('#78350f');
+    const g = ['#14532d', '#15803d', '#166534', '#22c55e'];
+    return new THREE.Color(g[Math.floor(rnd2 * g.length)]);
+  }
+
+  // Ambient outside canopy periphery
+  if (seasonId === 'spring') return new THREE.Color(rnd > 0.5 ? '#831843' : '#9d174d');
+  if (seasonId === 'autumn') return new THREE.Color(rnd > 0.5 ? '#7f1d1d' : '#991b1b');
+  if (seasonId === 'winter') return new THREE.Color(rnd > 0.5 ? '#1e3a8a' : '#0369a1');
+  return new THREE.Color(rnd > 0.5 ? '#15803d' : '#14532d');
 }
 
 /**
@@ -418,7 +597,6 @@ export const treeStyle: QRStyleGenerator = {
     const colLightA = new THREE.Color(palette.stoneLight);
     const colLightB = new THREE.Color(palette.stoneDark);
     const colLightC = new THREE.Color(palette.stoneShadow);
-    const colScanWhite = new THREE.Color('#ffffff'); // Pure luminous porcelain marble in 90° scan mode
 
     let lIdx = 0;
     for (let r = 0; r < N; r++) {
@@ -437,7 +615,7 @@ export const treeStyle: QRStyleGenerator = {
 
           lightPaverModules.push({
             treeColor: stoneCol.clone(),
-            scanColor: colScanWhite.clone(),
+            scanColor: getSeasonalPaverScanColor(season.id, r, c),
           });
 
           lightPaversMesh.setColorAt(lIdx, stoneCol);
@@ -1018,9 +1196,6 @@ export const treeStyle: QRStyleGenerator = {
     const qrModules: QRMosaicModule[] = [];
     const dummyQR = new THREE.Object3D();
 
-    const centerCoord = (N - 1) / 2;
-    const maxCenterDist = Math.SQRT2 * centerCoord;
-
     for (let i = 0; i < qrTileCount; i++) {
       const mod = darkModules[i];
       const { x, z } = toWorldPos(mod.row, mod.col);
@@ -1030,17 +1205,8 @@ export const treeStyle: QRStyleGenerator = {
       const colorTree = treeHash === 0 ? new THREE.Color(palette.stoneDark) : new THREE.Color(palette.stoneLight);
 
       // In 90° Scan mode:
-      // Finder corners: solid authoritative signature accent
-      // Data modules: smooth harmonic radial + diagonal flow across the matrix (zero random noisy speckles!)
-      let colorQR: THREE.Color;
-      if (mod.isFinder) {
-        colorQR = new THREE.Color(palette.qrFinderDark);
-      } else {
-        const rDist = Math.sqrt((mod.row - centerCoord) ** 2 + (mod.col - centerCoord) ** 2) / maxCenterDist;
-        const diag = (mod.row + mod.col) / (2 * N);
-        const flowT = THREE.MathUtils.clamp(rDist * 0.38 + diag * 0.62, 0, 1);
-        colorQR = samplePaletteRamp(palette.qrDataColors, flowT);
-      }
+      // Procedural Pixel-Art Tree QR Code matching user reference photo
+      const colorQR = getSeasonalTreeScanColor(season.id, mod.row, mod.col, N, mod.isFinder);
 
       const worldPos = new THREE.Vector3(x, paverBlockHeight / 2, z);
       qrModules.push({ worldPos, colorTree, colorQR });
