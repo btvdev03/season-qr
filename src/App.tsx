@@ -31,9 +31,21 @@ export default function App() {
   // Core App State (Auto-detect season based on month: Tháng 11 = Đông Sa Pa)
   const [url, setUrl] = useState<string>('https://btvdev03.github.io/season-qr/')
   const [inputUrl, setInputUrl] = useState<string>('https://btvdev03.github.io/season-qr/')
-  const [selectedSeason, setSelectedSeason] = useState<SeasonKey>(() => getAutoSeason())
+  const [selectedSeason, setSelectedSeason] = useState<SeasonKey>(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('season')
+      if (p === 'spring' || p === 'summer' || p === 'autumn' || p === 'winter') return p
+    }
+    return getAutoSeason()
+  })
   const selectedStyle: StyleKey = 'tree'
-  const [viewMode, setViewMode] = useState<ViewMode>('isometric')
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const v = new URLSearchParams(window.location.search).get('view')
+      if (v === 'topDown') return 'topDown'
+    }
+    return 'isometric'
+  })
   const [isMuted, setIsMuted] = useState<boolean>(true)
   const [isExporting, setIsExporting] = useState<boolean>(false)
   const [showSettingsDrawer, setShowSettingsDrawer] = useState<boolean>(false)
@@ -67,6 +79,9 @@ export default function App() {
 
     sceneManagerRef.current = manager
     ;(window as any).__sceneManager = manager
+    if (viewMode === 'topDown') {
+      manager.setViewMode('topDown', false)
+    }
 
     return () => {
       manager.dispose()
@@ -283,7 +298,7 @@ export default function App() {
       </div>
 
       {/* 4. FLOATING PERSPECTIVE HINT PILL */}
-      <div className="fixed bottom-[max(168px,calc(154px+env(safe-area-inset-bottom,0px)))] sm:bottom-[180px] left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all duration-300 w-max max-w-[92vw]">
+      <div className="fixed bottom-[max(166px,calc(152px+env(safe-area-inset-bottom,0px)))] sm:bottom-[178px] inset-x-0 mx-auto w-fit max-w-[92vw] z-20 pointer-events-auto transition-all duration-300">
         <button
           onClick={() => {
             const nextMode = viewMode === 'isometric' ? 'topDown' : 'isometric'
@@ -307,23 +322,24 @@ export default function App() {
       </div>
 
       {/* 5. LUXURY FLOATING ISLAND COMMAND DOCK */}
-      <div className="fixed bottom-2.5 sm:bottom-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md sm:max-w-lg px-3 sm:px-4 pointer-events-auto pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]">
+      <div className="fixed bottom-2.5 sm:bottom-5 inset-x-0 mx-auto z-20 w-full max-w-md sm:max-w-lg px-3 sm:px-4 pointer-events-auto pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]">
         <div className="w-full bg-white/88 backdrop-blur-2xl rounded-3xl p-2.5 sm:p-3 shadow-[0_16px_40px_-8px_rgba(0,0,0,0.12)] border border-white/80 ring-1 ring-stone-900/5 flex flex-col gap-2 transition-all">
           {/* Row 1: Integrated URL Input & Action Cluster */}
           <form
             onSubmit={handleUrlSubmit}
-            className="flex items-center gap-1.5 bg-stone-100/80 focus-within:bg-white rounded-2xl p-1 sm:p-1.5 border border-stone-200/70 focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/10 transition-all shadow-2xs"
+            className="flex items-center gap-1.5 bg-stone-100/80 focus-within:bg-white rounded-2xl p-1 sm:p-1.5 border border-stone-200/70 focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/10 transition-all shadow-2xs min-w-0"
           >
             <div className="pl-2 sm:pl-2.5 text-stone-400 focus-within:text-emerald-600 shrink-0">
               <Link2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <input
               type="text"
+              size={1}
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               onBlur={() => handleUrlSubmit()}
               placeholder="Nhập link bất kỳ (https://...)"
-              className="flex-1 min-w-0 bg-transparent text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 outline-none font-semibold truncate"
+              className="w-full flex-1 min-w-0 bg-transparent text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 outline-none font-semibold truncate"
             />
 
             {/* Clear Input Button */}
@@ -412,9 +428,9 @@ export default function App() {
           {/* Row 3: 4-Season Segmented Tab Switcher + Sound Toggle */}
           <div className="flex items-center justify-between gap-1 p-1 rounded-2xl bg-stone-100/90 border border-stone-200/70 text-xs font-bold">
             {[
-              { id: 'spring', label: 'Xuân', icon: '🌼', activeClass: 'bg-amber-100 text-amber-950 border-amber-300/80 shadow-xs ring-1 ring-amber-400/20' },
+              { id: 'spring', label: 'Xuân', icon: 'mai', activeClass: 'bg-amber-100 text-amber-950 border-amber-300/80 shadow-xs ring-1 ring-amber-400/20' },
               { id: 'summer', label: 'Hạ', icon: '☀️', activeClass: 'bg-emerald-100 text-emerald-950 border-emerald-300/80 shadow-xs ring-1 ring-emerald-400/20' },
-              { id: 'autumn', label: 'Thu', icon: '🍁', activeClass: 'bg-amber-100 text-amber-950 border-amber-300/80 shadow-xs ring-1 ring-amber-400/20' },
+              { id: 'autumn', label: 'Thu', icon: '🍁', activeClass: 'bg-orange-100 text-orange-950 border-orange-300/80 shadow-xs ring-1 ring-orange-400/20' },
               { id: 'winter', label: 'Đông', icon: '❄️', activeClass: 'bg-sky-100 text-sky-950 border-sky-300/80 shadow-xs ring-1 ring-sky-400/20' },
             ].map((s) => {
               const isSelected = selectedSeason === s.id
@@ -428,7 +444,19 @@ export default function App() {
                       : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
                   }`}
                 >
-                  <span className="text-xs sm:text-sm">{s.icon}</span>
+                  {s.icon === 'mai' ? (
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none">
+                      <circle cx="12" cy="6.2" r="4.1" fill="#eab308" />
+                      <circle cx="17.5" cy="10.2" r="4.1" fill="#facc15" />
+                      <circle cx="15.4" cy="16.6" r="4.1" fill="#eab308" />
+                      <circle cx="8.6" cy="16.6" r="4.1" fill="#facc15" />
+                      <circle cx="6.5" cy="10.2" r="4.1" fill="#eab308" />
+                      <circle cx="12" cy="12" r="2.6" fill="#ea580c" />
+                      <circle cx="12" cy="12" r="1.2" fill="#fef08a" />
+                    </svg>
+                  ) : (
+                    <span className="text-xs sm:text-sm">{s.icon}</span>
+                  )}
                   <span className="text-[11px] sm:text-xs">{s.label}</span>
                 </button>
               )

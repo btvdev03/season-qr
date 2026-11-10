@@ -88,7 +88,7 @@ export class SceneManager {
   private pureWhiteCol = new THREE.Color(0xffffff);
 
   // Presets & Dynamic Responsive Framing
-  private readonly ISO_TARGET = new THREE.Vector3(0, 5.5, 0);
+  private readonly ISO_TARGET = new THREE.Vector3(0, 5.8, 0);
   private readonly ISO_UP = new THREE.Vector3(0, 1, 0);
   private readonly SCAN_TARGET = new THREE.Vector3(0, 0, 0);
   private readonly SCAN_UP = new THREE.Vector3(0, 0, -1); // Up vector makes QR orientation upright
@@ -116,8 +116,8 @@ export class SceneManager {
    */
   public getIsoCameraPos(): THREE.Vector3 {
     const aspect = this.getContainerAspect();
-    const isoMultiplier = THREE.MathUtils.clamp(1.0 / Math.pow(Math.min(1.0, aspect), 0.75), 1.0, 2.2);
-    return new THREE.Vector3(22 * isoMultiplier, 16 * isoMultiplier, 22 * isoMultiplier);
+    const isoMultiplier = THREE.MathUtils.clamp(1.0 / Math.pow(Math.min(1.0, aspect), 0.70), 1.0, 2.15);
+    return new THREE.Vector3(30.5 * isoMultiplier, 22.0 * isoMultiplier, 30.5 * isoMultiplier);
   }
 
   constructor(config: SceneManagerConfig) {
@@ -354,38 +354,38 @@ export class SceneManager {
       this.particles.group.visible = this.scanModeProgress < 0.7;
     }
 
-    // In scan mode, balance ambient and sun illumination to prevent specular glare blowout
-    // while keeping jewel-toned QR modules vibrant, deep, and high-contrast
+    // In scan mode, keep dark QR modules deep ink-rich while light pavers emit pure #ffffff white
     if (this.scanModeProgress > 0.05) {
       this.sunLight.castShadow = this.scanModeProgress < 0.4;
       this.ambientLight.intensity = THREE.MathUtils.lerp(
         this.currentSeason.lighting.ambientIntensity,
-        1.45,
+        0.95,
         this.scanModeProgress
       );
       this.sunLight.intensity = THREE.MathUtils.lerp(
         this.currentSeason.lighting.sunIntensity,
-        0.05,
+        0.15,
         this.scanModeProgress
       );
-      // Smoothly neutralize ambient & sky lighting to pure crisp white in scan mode
-      this.tempAmbientCol
-        .set(this.currentSeason.lighting.ambientColor)
-        .lerp(this.pureWhiteCol, this.scanModeProgress);
-      this.ambientLight.color.copy(this.tempAmbientCol);
-
       if (this.hemiLight) {
+        this.hemiLight.intensity = THREE.MathUtils.lerp(0.35, 0.15, this.scanModeProgress);
         this.tempHemiSkyCol
           .set(this.currentSeason.lighting.skyColor)
           .lerp(this.pureWhiteCol, this.scanModeProgress);
         this.hemiLight.color.copy(this.tempHemiSkyCol);
       }
+      // Smoothly neutralize ambient lighting to pure white in scan mode
+      this.tempAmbientCol
+        .set(this.currentSeason.lighting.ambientColor)
+        .lerp(this.pureWhiteCol, this.scanModeProgress);
+      this.ambientLight.color.copy(this.tempAmbientCol);
     } else {
       this.sunLight.castShadow = true;
       this.ambientLight.intensity = this.currentSeason.lighting.ambientIntensity;
       this.ambientLight.color.set(this.currentSeason.lighting.ambientColor);
       this.sunLight.intensity = this.currentSeason.lighting.sunIntensity;
       if (this.hemiLight) {
+        this.hemiLight.intensity = 0.35;
         this.hemiLight.color.set(this.currentSeason.lighting.skyColor);
       }
     }
@@ -557,6 +557,7 @@ export class SceneManager {
     if (renderTopDown) {
       this.scanModeProgress = 1;
       this.applyScanModeDecor();
+      this.renderer.setClearColor('#ffffff', 1);
       // At aspect = 1.0 and fov = 42, 58 units distance provides 44.5 units of view height, perfectly framing the 36-unit patio + quiet zone
       this.camera.position.set(0, 58, 0.0001);
       this.camera.up.copy(this.SCAN_UP);
@@ -572,6 +573,9 @@ export class SceneManager {
     const dataUrl = this.renderer.domElement.toDataURL('image/png');
 
     // Restore original state
+    if (renderTopDown) {
+      this.renderer.setClearColor('#000000', 0);
+    }
     this.scanModeProgress = prevProgress;
     this.applyScanModeDecor();
     this.camera.position.copy(prevPos);

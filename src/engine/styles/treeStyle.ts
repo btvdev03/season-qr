@@ -136,7 +136,7 @@ function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
       };
     case 'spring':
       return {
-        leafTexture: `${base}assets/leaves/oak_spring.png`,
+        leafTexture: `${base}assets/leaves/oak_spring.png?v=mai3`,
         barkTint: 0xd49b6a, // Warm aged bonsai trunk timber tint
         grassDark: '#14532d',
         grassMid: '#16a34a',
@@ -537,6 +537,8 @@ export const treeStyle: QRStyleGenerator = {
     const plinthGeo = new THREE.BoxGeometry(plinthSize, plinthHeight, plinthSize);
     const plinthMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(palette.plinthCurb),
+      emissive: new THREE.Color('#ffffff'),
+      emissiveIntensity: 0,
       roughness: 0.85,
       metalness: 0.05,
       flatShading: true,
@@ -554,6 +556,8 @@ export const treeStyle: QRStyleGenerator = {
     const terraceBedGeo = new THREE.BoxGeometry(sceneSize, paverBlockHeight * 0.95, sceneSize);
     const terraceBedMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(palette.stoneLight),
+      emissive: new THREE.Color('#ffffff'),
+      emissiveIntensity: 0,
       roughness: 0.85,
       metalness: 0.04,
     });
@@ -567,6 +571,8 @@ export const treeStyle: QRStyleGenerator = {
       moduleSize * 0.988
     );
     const paverBlockMat = new THREE.MeshStandardMaterial({
+      emissive: new THREE.Color('#ffffff'),
+      emissiveIntensity: 0,
       roughness: 0.65,
       metalness: 0.02,
       flatShading: true,
@@ -1109,9 +1115,9 @@ export const treeStyle: QRStyleGenerator = {
     treeOptions.bark.tint = palette.barkTint;
     treeOptions.leaves.tint = 0xffffff;
     if (season.id === 'spring') {
-      // Authentic blooming Hoa Mai bonsai: lush floral volume with radiant golden blossoms
-      treeOptions.leaves.count = 22;
-      treeOptions.leaves.size = 3.4;
+      // Authentic blooming Hoa Mai bonsai: lush branching sprig clusters of 5-petal golden blossoms
+      treeOptions.leaves.count = 24;
+      treeOptions.leaves.size = 3.7;
       treeOptions.leaves.start = 0.035;
     }
 
@@ -1129,15 +1135,28 @@ export const treeStyle: QRStyleGenerator = {
       palette.leafTexture,
       (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.anisotropy = 8; // Tack-sharp botanical detail at all camera angles
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.needsUpdate = true;
         if (realisticTree.leavesMesh && realisticTree.leavesMesh.material) {
           const leafMat = realisticTree.leavesMesh.material as any;
           leafMat.map = tex;
-          leafMat.color.set(0xffffff);
+          leafMat.color.set(season.id === 'spring' ? 0xffe033 : 0xffffff);
+          leafMat.transparent = false;
           if ('shininess' in leafMat) {
             leafMat.shininess = season.id === 'spring' ? 4 : 3;
             leafMat.specular = new THREE.Color(season.id === 'spring' ? 0x1a1505 : 0x080808);
           }
-          leafMat.alphaTest = season.id === 'spring' ? 0.24 : 0.28;
+          if (season.id === 'spring') {
+            // Luminous warm golden petal glow (prevents washing out to pale cream)
+            leafMat.emissiveMap = tex;
+            leafMat.emissive = new THREE.Color(0xffb703);
+            leafMat.emissiveIntensity = 0.24;
+          }
+          leafMat.alphaTest = season.id === 'spring' ? 0.50 : 0.35;
           leafMat.needsUpdate = true;
         }
       },
@@ -1150,7 +1169,7 @@ export const treeStyle: QRStyleGenerator = {
     realisticTree.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         child.castShadow = true;
-        child.receiveShadow = true;
+        child.receiveShadow = child !== realisticTree.leavesMesh || season.id !== 'spring';
       }
     });
 
@@ -1333,9 +1352,14 @@ export const treeStyle: QRStyleGenerator = {
         // In SceneManager, p is already eased with easeInOutCubic in exact lockstep with camera
         const qrEase = p;
 
-        // Base slab and quiet zone morph to pure crisp white (#ffffff) in scan mode
+        // Base slab, pavers, and quiet zone morph to 100% pure luminous white (#ffffff) in scan mode
+        // Emissive white overcomes ACESFilmicToneMapping gray compression so light modules render exact RGB(255,255,255)
+        const whiteGlowIntensity = Math.pow(qrEase, 1.5) * 8.0;
         terraceBedMat.color.lerpColors(stoneLightCol, scanPureWhiteCol, qrEase);
+        terraceBedMat.emissiveIntensity = whiteGlowIntensity;
         plinthMat.color.lerpColors(plinthCurbCol, scanPureWhiteCol, qrEase);
+        plinthMat.emissiveIntensity = whiteGlowIntensity;
+        paverBlockMat.emissiveIntensity = whiteGlowIntensity;
 
         // Fold branches & grass smoothly as canopy voxels descend onto the ground
         const decorScale = Math.max(0.0001, 1.0 - Math.pow(qrEase, 1.25));
