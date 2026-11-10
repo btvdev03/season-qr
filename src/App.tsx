@@ -50,8 +50,8 @@ export default function App() {
   const [isExporting, setIsExporting] = useState<boolean>(false)
   const [showSettingsDrawer, setShowSettingsDrawer] = useState<boolean>(false)
 
-  // Live QR Creation Counter State (Displayed on outside header bar)
-  const [globalQRCount, setGlobalQRCount] = useState<number>(() => getCachedGlobalCount())
+  // Live QR Creation Counter State (Null on first-ever visit until live count resolves)
+  const [globalQRCount, setGlobalQRCount] = useState<number | null>(() => getCachedGlobalCount())
 
   // Interactive Settings State
   const [isAutoRotate, setIsAutoRotate] = useState<boolean>(false)
@@ -90,14 +90,27 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Fetch live global QR creation count on mount
+  // Fetch latest live global QR creation count immediately & refresh when tab refocuses
   useEffect(() => {
     let isMounted = true
     fetchGlobalQRCount().then((count) => {
       if (isMounted) setGlobalQRCount(count)
     })
+
+    const refreshLiveCount = () => {
+      if (document.visibilityState === 'visible') {
+        fetchGlobalQRCount(true).then((count) => {
+          if (isMounted) setGlobalQRCount(count)
+        })
+      }
+    }
+
+    window.addEventListener('focus', refreshLiveCount)
+    document.addEventListener('visibilitychange', refreshLiveCount)
     return () => {
       isMounted = false
+      window.removeEventListener('focus', refreshLiveCount)
+      document.removeEventListener('visibilitychange', refreshLiveCount)
     }
   }, [])
 
