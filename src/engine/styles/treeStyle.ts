@@ -1109,9 +1109,10 @@ export const treeStyle: QRStyleGenerator = {
     treeOptions.bark.tint = palette.barkTint;
     treeOptions.leaves.tint = 0xffffff;
     if (season.id === 'spring') {
-      treeOptions.leaves.count = 20;
-      treeOptions.leaves.size = 3.3;
-      treeOptions.leaves.start = 0.04;
+      // Authentic blooming Hoa Mai bonsai: lush floral volume with radiant golden blossoms
+      treeOptions.leaves.count = 22;
+      treeOptions.leaves.size = 3.4;
+      treeOptions.leaves.start = 0.035;
     }
 
     const realisticTree = new Tree();
