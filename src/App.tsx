@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import confetti from 'canvas-confetti'
-import { ScanGuideModal } from './components/ScanGuideModal'
 import type { SeasonKey, StyleKey, ViewMode } from './types'
 import { resolveSeason, getAutoSeason } from './utils/seasonUtils'
 import { SceneManager } from './engine/SceneManager'
@@ -11,12 +10,12 @@ import {
   Volume2,
   VolumeX,
   SlidersHorizontal,
-  HelpCircle,
   Download,
   ShieldCheck,
   Link2,
   Camera,
   ExternalLink,
+  X,
 } from 'lucide-react'
 import {
   recordQRGeneration,
@@ -47,9 +46,6 @@ export default function App() {
   const [isWeatherEnabled, setIsWeatherEnabled] = useState<boolean>(true)
   const [isCameraLocked, setIsCameraLocked] = useState<boolean>(true)
   const [exportQuality, setExportQuality] = useState<'1080p' | '2k' | '4k'>('1080p')
-
-  // Modals
-  const [isScanGuideOpen, setIsScanGuideOpen] = useState<boolean>(false)
 
   const actualSeason = resolveSeason(selectedSeason)
 
@@ -175,8 +171,11 @@ export default function App() {
     }
   }
 
-  // Dynamic seasonal background styling for luxury museum atmosphere
+  // Dynamic seasonal background styling for luxury museum atmosphere (pure crisp white in 90° scan mode)
   const getSeasonBackgroundClass = () => {
+    if (viewMode === 'topDown') {
+      return 'from-white via-white to-white'
+    }
     switch (actualSeason) {
       case 'spring':
         return 'from-[#fffef7] via-[#fefbf0] to-[#fef3c7]/30'
@@ -190,8 +189,11 @@ export default function App() {
     }
   }
 
-  // Luminous radial aura positioned right behind the 3D diorama
+  // Luminous radial aura positioned right behind the 3D diorama (fades to transparent in 90° scan mode)
   const getSeasonAuraGradient = () => {
+    if (viewMode === 'topDown') {
+      return 'transparent'
+    }
     switch (actualSeason) {
       case 'spring':
         return 'radial-gradient(circle at 50% 46%, rgba(234, 179, 8, 0.22) 0%, rgba(254, 240, 138, 0.35) 30%, transparent 68%)'
@@ -205,42 +207,6 @@ export default function App() {
     }
   }
 
-  const getSeasonBadgeInfo = () => {
-    switch (actualSeason) {
-      case 'spring':
-        return {
-          label: 'Xuân Mai Vàng',
-          shortLabel: 'Xuân',
-          icon: '🌼',
-          color: 'bg-amber-100 text-amber-900 border-amber-300',
-        }
-      case 'autumn':
-        return {
-          label: 'Thu Cúc Vàng',
-          shortLabel: 'Thu',
-          icon: '🍁',
-          color: 'bg-amber-100 text-amber-800 border-amber-200',
-        }
-      case 'winter':
-        return {
-          label: 'Đông Sa Pa',
-          shortLabel: 'Đông',
-          icon: '❄️',
-          color: 'bg-sky-100 text-sky-800 border-sky-200',
-        }
-      case 'summer':
-      default:
-        return {
-          label: 'Hạ Phượng Vĩ',
-          shortLabel: 'Hạ',
-          icon: '☀️',
-          color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        }
-    }
-  }
-
-  const badge = getSeasonBadgeInfo()
-
   return (
     <main
       className={`relative w-screen h-screen overflow-hidden select-none font-sans transition-colors duration-700 text-stone-800 bg-gradient-to-b ${getSeasonBackgroundClass()}`}
@@ -253,7 +219,7 @@ export default function App() {
 
       {/* 1. DISTINCTIVE RESPONSIVE HEADER */}
       <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 py-2.5 sm:px-6 sm:py-4 pointer-events-none gap-2">
-        {/* Brand Logo & Active Season Badge */}
+        {/* Brand Logo & Global Creation Counter */}
         <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto min-w-0">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-stone-900 text-white flex items-center justify-center font-bold text-sm sm:text-base shadow-md border border-stone-700/30 shrink-0">
             🌳
@@ -262,13 +228,6 @@ export default function App() {
             <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="font-black text-stone-900 text-base sm:text-lg tracking-tight shrink-0">
                 SeasonQR
-              </span>
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold border shadow-xs whitespace-nowrap shrink-0 ${badge.color}`}
-              >
-                <span>{badge.icon}</span>
-                <span className="hidden sm:inline">{badge.label}</span>
-                <span className="sm:hidden">{badge.shortLabel}</span>
               </span>
 
               {/* Global QR Creation Counter Badge */}
@@ -287,16 +246,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* Top Right Actions */}
+        {/* Top Right Actions: Settings & Portfolio */}
         <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
-          <button
-            onClick={() => setIsScanGuideOpen(true)}
-            className="p-2 sm:p-2.5 rounded-xl bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition-all active:scale-95"
-            title="Mẹo quét mã QR"
-          >
-            <HelpCircle className="w-4 h-4" />
-          </button>
-
           <button
             onClick={() => setShowSettingsDrawer(!showSettingsDrawer)}
             className="p-2 sm:p-2.5 rounded-xl bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition-all active:scale-95"
@@ -309,7 +260,7 @@ export default function App() {
             href="https://btvdev03.github.io/"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1 p-2 sm:px-3 sm:py-2 rounded-xl bg-white/90 hover:bg-white text-stone-800 hover:text-stone-900 border border-stone-200/90 shadow-xs text-xs font-bold transition-all hover:scale-105 active:scale-95"
+            className="flex items-center gap-1.5 px-2.5 py-2 sm:px-3 sm:py-2 rounded-xl bg-white/90 hover:bg-white text-stone-800 hover:text-stone-900 border border-stone-200/90 shadow-xs text-xs font-bold transition-all hover:scale-105 active:scale-95"
             title="Xem Portfolio Võ Tấn Bản (btvdev03)"
           >
             <ExternalLink className="w-3.5 h-3.5 text-stone-600" />
@@ -332,7 +283,7 @@ export default function App() {
       </div>
 
       {/* 4. FLOATING PERSPECTIVE HINT PILL */}
-      <div className={`fixed ${viewMode === 'topDown' ? 'bottom-40 sm:bottom-36' : 'bottom-[148px] sm:bottom-44'} left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all duration-300 w-max max-w-[92vw]`}>
+      <div className="fixed bottom-[max(168px,calc(154px+env(safe-area-inset-bottom,0px)))] sm:bottom-[180px] left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all duration-300 w-max max-w-[92vw]">
         <button
           onClick={() => {
             const nextMode = viewMode === 'isometric' ? 'topDown' : 'isometric'
@@ -356,14 +307,14 @@ export default function App() {
       </div>
 
       {/* 5. LUXURY FLOATING ISLAND COMMAND DOCK */}
-      <div className="fixed bottom-2.5 sm:bottom-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-lg px-3 sm:px-4 pointer-events-auto pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]">
-        <div className="w-full bg-white/92 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-2.5 sm:p-3 shadow-2xl border border-stone-200/80 flex flex-col gap-2 sm:gap-2.5 transition-all">
+      <div className="fixed bottom-2.5 sm:bottom-5 left-1/2 -translate-x-1/2 z-20 w-full max-w-md sm:max-w-lg px-3 sm:px-4 pointer-events-auto pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]">
+        <div className="w-full bg-white/88 backdrop-blur-2xl rounded-3xl p-2.5 sm:p-3 shadow-[0_16px_40px_-8px_rgba(0,0,0,0.12)] border border-white/80 ring-1 ring-stone-900/5 flex flex-col gap-2 transition-all">
           {/* Row 1: Integrated URL Input & Action Cluster */}
           <form
             onSubmit={handleUrlSubmit}
-            className="flex items-center gap-1.5 sm:gap-2 bg-stone-100 rounded-xl sm:rounded-2xl p-1 sm:p-1.5 border border-stone-200/80 focus-within:border-stone-400 focus-within:bg-white transition-all"
+            className="flex items-center gap-1.5 bg-stone-100/80 focus-within:bg-white rounded-2xl p-1 sm:p-1.5 border border-stone-200/70 focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/10 transition-all shadow-2xs"
           >
-            <div className="pl-2 sm:pl-2.5 text-stone-500 shrink-0">
+            <div className="pl-2 sm:pl-2.5 text-stone-400 focus-within:text-emerald-600 shrink-0">
               <Link2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <input
@@ -371,9 +322,21 @@ export default function App() {
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               onBlur={() => handleUrlSubmit()}
-              placeholder="Nhập link bất kỳ: Zalo, FB, Web (https://...)"
+              placeholder="Nhập link bất kỳ (https://...)"
               className="flex-1 min-w-0 bg-transparent text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 outline-none font-semibold truncate"
             />
+
+            {/* Clear Input Button */}
+            {inputUrl && (
+              <button
+                type="button"
+                onClick={() => setInputUrl('')}
+                className="p-1 text-stone-400 hover:text-stone-600 rounded-full hover:bg-stone-200/60 transition-colors shrink-0"
+                title="Xóa nội dung"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
 
             {/* Quick Action 1: 3D <-> Scan 90deg Mode Toggle */}
             <button
@@ -383,10 +346,10 @@ export default function App() {
                 setViewMode(nextMode)
                 soundEngine.playMorphSound(nextMode === 'topDown')
               }}
-              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0 ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0 ${
                 viewMode === 'topDown'
                   ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-white text-stone-800 hover:text-stone-900 border border-stone-200/90 shadow-xs'
+                  : 'bg-white text-stone-800 hover:text-stone-900 border border-stone-200/90 shadow-2xs'
               }`}
               title={viewMode === 'isometric' ? 'Chuyển sang góc quét QR 90°' : 'Quay lại góc nhìn 3D Isometric'}
             >
@@ -408,7 +371,7 @@ export default function App() {
               type="button"
               onClick={() => handleExport(viewMode === 'topDown')}
               disabled={isExporting}
-              className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-stone-900 hover:bg-stone-800 text-white shadow-xs transition-all active:scale-95 shrink-0 flex items-center justify-center"
+              className="p-1.5 sm:p-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white shadow-2xs transition-all active:scale-95 shrink-0 flex items-center justify-center disabled:opacity-50"
               title={`Tải ảnh QR (${exportQuality.toUpperCase()})`}
             >
               {isExporting ? (
@@ -419,49 +382,54 @@ export default function App() {
             </button>
           </form>
 
-          {/* Row 1.5: Quick Presets */}
-          <div className="flex items-center justify-between px-1 text-[11px] font-semibold text-stone-600 gap-1.5">
-            <span className="opacity-75 text-[10px] shrink-0">Gợi ý nhanh:</span>
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-              {[
-                { name: 'Zalo', url: 'https://zalo.me/' },
-                { name: 'Facebook', url: 'https://facebook.com/' },
-                { name: 'Portfolio', url: 'https://btvdev03.github.io/' },
-                { name: 'GitHub', shortName: 'GitHub', url: 'https://github.com/btvdev03/season-qr' },
-              ].map(({ name, url: presetUrl }) => (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => handleQuickPreset(presetUrl)}
-                  className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/80 text-[10px] font-semibold transition-all active:scale-95 shadow-2xs whitespace-nowrap shrink-0"
-                >
-                  {name}
-                </button>
-              ))}
+          {/* Row 2: Portfolio Quick Shortcut Pill */}
+          <div className="flex items-center justify-between px-1 text-[11px]">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleQuickPreset('https://btvdev03.github.io/')}
+                className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-900 border border-stone-200/80 hover:border-emerald-300 text-[10.5px] sm:text-xs font-semibold transition-all active:scale-95 shadow-2xs"
+                title="Nhập URL Portfolio để tạo QR 3D"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 group-hover:scale-125 transition-transform" />
+                <span>Võ Tấn Bản • Portfolio</span>
+              </button>
+              <a
+                href="https://btvdev03.github.io/"
+                target="_blank"
+                rel="noreferrer"
+                className="p-1 rounded-full bg-stone-100 hover:bg-stone-200/80 text-stone-500 hover:text-stone-800 border border-stone-200/80 transition-all active:scale-95"
+                title="Mở Portfolio Võ Tấn Bản trong tab mới"
+              >
+                <ExternalLink className="w-3 h-3 text-stone-600" />
+              </a>
             </div>
+            <span className="text-[10px] text-stone-400 font-medium hidden sm:inline">
+              100% Client-side
+            </span>
           </div>
 
-          {/* Row 2: 4-Season Segmented Tab Switcher */}
-          <div className="flex items-center justify-between gap-1 p-1 rounded-xl sm:rounded-2xl bg-stone-100 border border-stone-200/80 text-xs font-bold">
+          {/* Row 3: 4-Season Segmented Tab Switcher + Sound Toggle */}
+          <div className="flex items-center justify-between gap-1 p-1 rounded-2xl bg-stone-100/90 border border-stone-200/70 text-xs font-bold">
             {[
-              { id: 'spring', label: 'Xuân', icon: '🌼', activeClass: 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs' },
-              { id: 'summer', label: 'Hạ', icon: '☀️', activeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 shadow-xs' },
-              { id: 'autumn', label: 'Thu', icon: '🍁', activeClass: 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs' },
-              { id: 'winter', label: 'Đông', icon: '❄️', activeClass: 'bg-sky-100 text-sky-900 border-sky-300 shadow-xs' },
+              { id: 'spring', label: 'Xuân', icon: '🌼', activeClass: 'bg-amber-100 text-amber-950 border-amber-300/80 shadow-xs ring-1 ring-amber-400/20' },
+              { id: 'summer', label: 'Hạ', icon: '☀️', activeClass: 'bg-emerald-100 text-emerald-950 border-emerald-300/80 shadow-xs ring-1 ring-emerald-400/20' },
+              { id: 'autumn', label: 'Thu', icon: '🍁', activeClass: 'bg-amber-100 text-amber-950 border-amber-300/80 shadow-xs ring-1 ring-amber-400/20' },
+              { id: 'winter', label: 'Đông', icon: '❄️', activeClass: 'bg-sky-100 text-sky-950 border-sky-300/80 shadow-xs ring-1 ring-sky-400/20' },
             ].map((s) => {
               const isSelected = selectedSeason === s.id
               return (
                 <button
                   key={s.id}
                   onClick={() => setSelectedSeason(s.id as SeasonKey)}
-                  className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-transparent transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-xl border border-transparent transition-all ${
                     isSelected
                       ? s.activeClass
                       : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
                   }`}
                 >
-                  <span className="text-xs">{s.icon}</span>
-                  <span className="text-[11px]">{s.label}</span>
+                  <span className="text-xs sm:text-sm">{s.icon}</span>
+                  <span className="text-[11px] sm:text-xs">{s.label}</span>
                 </button>
               )
             })}
@@ -469,10 +437,10 @@ export default function App() {
             {/* Sound / Mute Toggle Button */}
             <button
               onClick={toggleSound}
-              className={`p-1.5 ml-0.5 rounded-lg sm:rounded-xl transition-all shrink-0 ${
+              className={`p-1.5 ml-0.5 rounded-xl border transition-all shrink-0 ${
                 isMuted
-                  ? 'text-stone-400 hover:text-stone-700'
-                  : 'text-emerald-700 bg-white shadow-xs'
+                  ? 'text-stone-400 hover:text-stone-700 border-transparent hover:bg-white/60'
+                  : 'text-emerald-700 bg-white border-emerald-200 shadow-xs'
               }`}
               title={isMuted ? 'Bật âm thanh thiên nhiên' : 'Tắt âm thanh'}
             >
@@ -681,13 +649,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* 7. Modals */}
-      <ScanGuideModal
-        isOpen={isScanGuideOpen}
-        onClose={() => setIsScanGuideOpen(false)}
-        onSwitchToTopDown={() => setViewMode('topDown')}
-      />
     </main>
   )
 }

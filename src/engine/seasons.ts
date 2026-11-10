@@ -143,12 +143,12 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
     foliage: {
       primary: '#eab308', // Radiant royal mai yellow
       secondary: '#facc15', // Bright sunny mai blossom
-      accent: '#fef08a', // Luminous petal tip
-      subAccent: '#ca8a04', // Golden amber stamen
+      accent: '#fde047', // Luminous petal tip
+      subAccent: '#ea580c', // Reddish-orange radiating stamen
     },
     structure: {
-      trunkPrimary: '#3e2712', // Warm aged bonsai bark
-      trunkSecondary: '#5d3c1a',
+      trunkPrimary: '#45220c', // Warm aged bonsai bark
+      trunkSecondary: '#6b3714',
       rockPrimary: '#7e8a82',
       rockSecondary: '#99a79e',
     },
@@ -167,7 +167,7 @@ export const SEASONS: Record<SeasonId, SeasonTheme> = {
       count: 65,
       speed: 0.85,
       size: 0.35,
-      colors: ['#facc15', '#fde047', '#fef08a', '#eab308'],
+      colors: ['#facc15', '#fde047', '#fef08a', '#eab308', '#ea580c'],
       swayAmplitude: 0.85,
       swayFrequency: 1.8,
       rising: false,

@@ -74,13 +74,18 @@ export class SceneManager {
   // Camera Smooth Transition State
   private isTransitioning: boolean = false;
   private transitionTime: number = 0;
-  private transitionDuration: number = 1.15; // seconds
+  private transitionDuration: number = 0.90; // Snappy, fluid, premium 60 FPS transition
   private startCamPos = new THREE.Vector3();
   private startCamTarget = new THREE.Vector3();
   private startCamUp = new THREE.Vector3();
   private destCamPos = new THREE.Vector3();
   private destCamTarget = new THREE.Vector3();
   private destCamUp = new THREE.Vector3();
+
+  // Reusable lighting color helpers for pure crisp white illumination in scan mode
+  private tempAmbientCol = new THREE.Color();
+  private tempHemiSkyCol = new THREE.Color();
+  private pureWhiteCol = new THREE.Color(0xffffff);
 
   // Presets & Dynamic Responsive Framing
   private readonly ISO_TARGET = new THREE.Vector3(0, 5.5, 0);
@@ -355,7 +360,7 @@ export class SceneManager {
       this.sunLight.castShadow = this.scanModeProgress < 0.4;
       this.ambientLight.intensity = THREE.MathUtils.lerp(
         this.currentSeason.lighting.ambientIntensity,
-        1.35,
+        1.45,
         this.scanModeProgress
       );
       this.sunLight.intensity = THREE.MathUtils.lerp(
@@ -363,10 +368,26 @@ export class SceneManager {
         0.05,
         this.scanModeProgress
       );
+      // Smoothly neutralize ambient & sky lighting to pure crisp white in scan mode
+      this.tempAmbientCol
+        .set(this.currentSeason.lighting.ambientColor)
+        .lerp(this.pureWhiteCol, this.scanModeProgress);
+      this.ambientLight.color.copy(this.tempAmbientCol);
+
+      if (this.hemiLight) {
+        this.tempHemiSkyCol
+          .set(this.currentSeason.lighting.skyColor)
+          .lerp(this.pureWhiteCol, this.scanModeProgress);
+        this.hemiLight.color.copy(this.tempHemiSkyCol);
+      }
     } else {
       this.sunLight.castShadow = true;
       this.ambientLight.intensity = this.currentSeason.lighting.ambientIntensity;
+      this.ambientLight.color.set(this.currentSeason.lighting.ambientColor);
       this.sunLight.intensity = this.currentSeason.lighting.sunIntensity;
+      if (this.hemiLight) {
+        this.hemiLight.color.set(this.currentSeason.lighting.skyColor);
+      }
     }
   }
 
@@ -607,6 +628,7 @@ export class SceneManager {
         this.controls.target.copy(this.destCamTarget);
         this.camera.up.copy(this.destCamUp);
         this.camera.lookAt(this.destCamTarget);
+        this.controls.update();
         this.scanModeProgress = this.scanModeTarget;
         this.applyScanModeDecor();
       }
@@ -615,7 +637,7 @@ export class SceneManager {
         this.controls.update();
       }
       // Only tick real-time wind physics in 3D mode (avoiding redundant state recalculations)
-      if (this.scanModeProgress < 0.95 && this.styleGroup) {
+      if (this.scanModeProgress < 0.05 && this.styleGroup) {
         const morphable = this.styleGroup as { updateMorph?: (p: number, time?: number) => void } | null;
         if (morphable && typeof morphable.updateMorph === 'function') {
           morphable.updateMorph(this.scanModeProgress, this.clock.getElapsedTime());
@@ -624,7 +646,7 @@ export class SceneManager {
     }
 
     // 2. Weather particles animation (only animate when visible)
-    if (this.particles && this.scanModeProgress < 0.8) {
+    if (this.particles && this.particles.group.visible && this.scanModeProgress < 0.7) {
       this.particles.update(delta);
     }
 

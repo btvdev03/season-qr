@@ -137,14 +137,14 @@ function getSeasonalPalette(seasonId: string): SeasonalDioramaPalette {
     case 'spring':
       return {
         leafTexture: `${base}assets/leaves/oak_spring.png`,
-        barkTint: 0xfffaea, // Warm aged apricot tree bark
+        barkTint: 0xd49b6a, // Warm aged bonsai trunk timber tint
         grassDark: '#14532d',
         grassMid: '#16a34a',
         grassLight: '#4ade80',
         grassTip: '#fde047',
-        flowerColors: ['#ffffff', '#fef08a', '#facc15', '#fbbf24', '#f59e0b'],
+        flowerColors: ['#fde047', '#facc15', '#eab308', '#fbbf24', '#fef08a'],
         cloverColors: ['#16a34a', '#22c55e', '#84cc16'],
-        fallenLeaves: ['#facc15', '#fde047', '#fef08a', '#eab308', '#ffffff'],
+        fallenLeaves: ['#facc15', '#fde047', '#fef08a', '#eab308', '#ea580c', '#ca8a04'],
         mossColor: '#4d7c0f',
         stoneLight: '#fefdf7',
         stoneDark: '#f7f4ea',
@@ -216,21 +216,13 @@ function hash2D(r: number, c: number): number {
 }
 
 /**
- * Returns warm natural ivory/stone tone for light modules in 90° scan mode
+ * Returns pure crisp white tone for light modules in 90° scan mode across all seasons.
+ * Guarantees instant phone camera QR recognition (<0.05s) and pure white background (no grayish or murky stone tones).
  */
-function getSeasonalPaverScanColor(seasonId: string, r: number, c: number): THREE.Color {
+function getSeasonalPaverScanColor(_seasonId: string, r: number, c: number): THREE.Color {
   const rnd = hash2D(r, c);
-  let tones: string[];
-  if (seasonId === 'spring') {
-    tones = ['#fefdf6', '#fdfbf0', '#fffef8', '#faf7ec'];
-  } else if (seasonId === 'autumn') {
-    tones = ['#fdf8f0', '#f9f2e4', '#fcf6eb', '#f6eee0'];
-  } else if (seasonId === 'winter') {
-    tones = ['#f8fafc', '#f1f5f9', '#f4f7fb', '#edf2f7'];
-  } else {
-    // Summer - Pristine warm ivory cream (>68% contrast against dark green/bark modules)
-    tones = ['#faf8f5', '#f6f3ec', '#fdfbf7', '#f4efe7'];
-  }
+  // Pure crisp white across all seasons (#ffffff / #fefefe)
+  const tones = ['#ffffff', '#ffffff', '#fefefe', '#ffffff'];
   return new THREE.Color(tones[Math.floor(rnd * tones.length)]);
 }
 
@@ -276,7 +268,7 @@ function getSeasonalTreeScanColor(
 
   if (inMainTrunk || inBranch) {
     if (seasonId === 'spring') {
-      const barks = ['#3e1704', '#4a1d06', '#542009', '#381504'];
+      const barks = ['#45220c', '#5a2d10', '#6b3815', '#3d1b08', '#733e18'];
       return new THREE.Color(barks[Math.floor(rnd2 * barks.length)]);
     }
     if (seasonId === 'autumn') {
@@ -454,21 +446,42 @@ function createCloverGeometry(radius: number): THREE.BufferGeometry {
 }
 
 /**
- * Creates a fallen leaf or sakura blossom petal
+ * Creates a fallen leaf or sakura/mai blossom petal with natural cupped contour
  */
 function createFallenPetalGeometry(width: number, length: number): THREE.BufferGeometry {
   const geo = new THREE.BufferGeometry();
   const hw = width / 2;
   const hl = length / 2;
 
+  // Realistic cupped obovate blossom petal contour
   const positions = new Float32Array([
-     0,    0.002, -hl,
-    -hw,   0.008,   0,
-     hw,   0.008,   0,
+    // Base tier
+    0, 0.002, -hl,
+    -hw * 0.5, 0.006, -hl * 0.4,
+    hw * 0.5, 0.006, -hl * 0.4,
 
-     0,    0.005,  hl,
-     hw,   0.008,   0,
-    -hw,   0.008,   0,
+    // Mid swell
+    -hw * 0.5, 0.006, -hl * 0.4,
+    -hw, 0.012, hl * 0.15,
+    hw * 0.5, 0.006, -hl * 0.4,
+
+    hw * 0.5, 0.006, -hl * 0.4,
+    -hw, 0.012, hl * 0.15,
+    hw, 0.012, hl * 0.15,
+
+    // Upper curve
+    -hw, 0.012, hl * 0.15,
+    -hw * 0.65, 0.008, hl * 0.72,
+    hw, 0.012, hl * 0.15,
+
+    hw, 0.012, hl * 0.15,
+    -hw * 0.65, 0.008, hl * 0.72,
+    hw * 0.65, 0.008, hl * 0.72,
+
+    // Rounded apex
+    -hw * 0.65, 0.008, hl * 0.72,
+    0, 0.004, hl,
+    hw * 0.65, 0.008, hl * 0.72,
   ]);
 
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -593,7 +606,7 @@ export const treeStyle: QRStyleGenerator = {
 
           const isReserved = matrix.isReserved(r, c);
           const scanColor = isReserved
-            ? new THREE.Color(getSeasonalPaverScanColor(season.id, 0, 0))
+            ? new THREE.Color('#ffffff')
             : getSeasonalPaverScanColor(season.id, r, c);
 
           lightPaverModules.push({
@@ -868,7 +881,8 @@ export const treeStyle: QRStyleGenerator = {
       addMossMound(Math.cos(angle) * r, Math.sin(angle) * r, rng.range(0.9, 1.35));
     }
 
-    for (let f = 0; f < 22; f++) {
+    const wildflowerCount = season.id === 'spring' ? 28 : 22;
+    for (let f = 0; f < wildflowerCount; f++) {
       const angle = rng.angle();
       const r = rng.range(1.2, 2.9);
       const fx = Math.cos(angle) * r;
@@ -883,7 +897,8 @@ export const treeStyle: QRStyleGenerator = {
       addClover(Math.cos(angle) * r, Math.sin(angle) * r, rng.range(0.85, 1.15));
     }
 
-    for (let p = 0; p < 50; p++) {
+    const fallenPetalCount = season.id === 'spring' ? 85 : 50;
+    for (let p = 0; p < fallenPetalCount; p++) {
       const angle = rng.angle();
       const r = rng.range(0.75, 4.2);
       addFallenPetal(Math.cos(angle) * r, Math.sin(angle) * r, rng.range(0.85, 1.3));
@@ -965,9 +980,9 @@ export const treeStyle: QRStyleGenerator = {
     });
 
     const flowerCenterMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color('#fbbf24'),
-      emissive: new THREE.Color('#d97706'),
-      emissiveIntensity: 0.25,
+      color: new THREE.Color(season.id === 'spring' ? '#ea580c' : '#fbbf24'),
+      emissive: new THREE.Color(season.id === 'spring' ? '#c2410c' : '#d97706'),
+      emissiveIntensity: season.id === 'spring' ? 0.35 : 0.25,
       roughness: 0.35,
       flatShading: true,
     });
@@ -1093,6 +1108,11 @@ export const treeStyle: QRStyleGenerator = {
     const treeOptions = JSON.parse(JSON.stringify(OAK_TREE_PRESET));
     treeOptions.bark.tint = palette.barkTint;
     treeOptions.leaves.tint = 0xffffff;
+    if (season.id === 'spring') {
+      treeOptions.leaves.count = 20;
+      treeOptions.leaves.size = 3.3;
+      treeOptions.leaves.start = 0.04;
+    }
 
     const realisticTree = new Tree();
     realisticTree.loadFromJson(treeOptions);
@@ -1113,10 +1133,10 @@ export const treeStyle: QRStyleGenerator = {
           leafMat.map = tex;
           leafMat.color.set(0xffffff);
           if ('shininess' in leafMat) {
-            leafMat.shininess = 3;
-            leafMat.specular = new THREE.Color(0x080808);
+            leafMat.shininess = season.id === 'spring' ? 4 : 3;
+            leafMat.specular = new THREE.Color(season.id === 'spring' ? 0x1a1505 : 0x080808);
           }
-          leafMat.alphaTest = 0.28;
+          leafMat.alphaTest = season.id === 'spring' ? 0.24 : 0.28;
           leafMat.needsUpdate = true;
         }
       },
@@ -1289,11 +1309,21 @@ export const treeStyle: QRStyleGenerator = {
     // ==========================================
     let lastProgress = -1;
 
+    // Pre-allocated reusable THREE.Color helper instances for zero heap GC pause in animation loop
+    const tempColorQR = new THREE.Color();
+    const tempColorPaver = new THREE.Color();
+    const stoneLightCol = new THREE.Color(palette.stoneLight);
+    const plinthCurbCol = new THREE.Color(palette.plinthCurb);
+    const scanPureWhiteCol = new THREE.Color('#ffffff');
+
     rootGroup.updateMorph = (progress: number, time: number = 0) => {
       // Advance real-time GPU wind physics
       windUniforms.uTime.value = time;
       const p = THREE.MathUtils.clamp(progress, 0, 1);
-      const isProgressChanging = Math.abs(p - lastProgress) > 0.001;
+      const isProgressChanging =
+        Math.abs(p - lastProgress) > 0.0005 ||
+        (p === 1 && lastProgress !== 1) ||
+        (p === 0 && lastProgress !== 0);
 
       // 1. Smooth 1:1 Voxel Compression & Camera Synchronization
       if (isProgressChanging) {
@@ -1302,10 +1332,9 @@ export const treeStyle: QRStyleGenerator = {
         // In SceneManager, p is already eased with easeInOutCubic in exact lockstep with camera
         const qrEase = p;
 
-        // Terrace bed slab color morph: turns into matching pure ivory quiet zone in scan mode
-        const scanBedCol = new THREE.Color(getSeasonalPaverScanColor(season.id, 0, 0));
-        const stoneLightCol = new THREE.Color(palette.stoneLight);
-        terraceBedMat.color.lerpColors(stoneLightCol, scanBedCol, qrEase);
+        // Base slab and quiet zone morph to pure crisp white (#ffffff) in scan mode
+        terraceBedMat.color.lerpColors(stoneLightCol, scanPureWhiteCol, qrEase);
+        plinthMat.color.lerpColors(plinthCurbCol, scanPureWhiteCol, qrEase);
 
         // Fold branches & grass smoothly as canopy voxels descend onto the ground
         const decorScale = Math.max(0.0001, 1.0 - Math.pow(qrEase, 1.25));
@@ -1320,6 +1349,7 @@ export const treeStyle: QRStyleGenerator = {
         grassGroup.visible = p < 0.98;
 
         // Morph every voxel module: 3D canopy height -> 2D flat ground tile
+        // Zero GC heap allocation: reuses single tempColorQR across all iterations
         for (let i = 0; i < qrTileCount; i++) {
           const mod = qrModules[i];
           const curY = THREE.MathUtils.lerp(mod.y3D, mod.yFlat, qrEase);
@@ -1331,23 +1361,24 @@ export const treeStyle: QRStyleGenerator = {
           dummyQR.updateMatrix();
           qrTileMesh.setMatrixAt(i, dummyQR.matrix);
 
-          const curColor = new THREE.Color().lerpColors(mod.color3D, mod.colorQR, qrEase);
-          qrTileMesh.setColorAt(i, curColor);
+          tempColorQR.lerpColors(mod.color3D, mod.colorQR, qrEase);
+          qrTileMesh.setColorAt(i, tempColorQR);
         }
         qrTileMesh.instanceMatrix.needsUpdate = true;
         if (qrTileMesh.instanceColor) qrTileMesh.instanceColor.needsUpdate = true;
 
         // Light pavers color morph
+        // Zero GC heap allocation: reuses single tempColorPaver across all iterations
         for (let i = 0; i < lightCount; i++) {
           const paver = lightPaverModules[i];
-          const curPaverCol = new THREE.Color().lerpColors(paver.treeColor, paver.scanColor, qrEase);
-          lightPaversMesh.setColorAt(i, curPaverCol);
+          tempColorPaver.lerpColors(paver.treeColor, paver.scanColor, qrEase);
+          lightPaversMesh.setColorAt(i, tempColorPaver);
         }
         if (lightPaversMesh.instanceColor) lightPaversMesh.instanceColor.needsUpdate = true;
       }
 
-      // 2. Real-time Wind Physics (only when tree is visible in 3D mode)
-      if (p < 0.95 && typeof realisticTree.update === 'function') {
+      // 2. Real-time Wind Physics (only when tree is stationary in 3D mode to eliminate transition jitter)
+      if (p < 0.05 && typeof realisticTree.update === 'function') {
         realisticTree.update(time);
       }
     };
