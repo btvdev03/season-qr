@@ -8,11 +8,13 @@ export * from './types';
 export * from './treeStyle';
 export * from './islandStyle';
 export * from './zenStyle';
+export * from './photoStyle';
 
 import type { QRStyleGenerator } from './types';
 import { treeStyle } from './treeStyle';
 import { islandStyle } from './islandStyle';
 import { zenStyle } from './zenStyle';
+import { photoStyle } from './photoStyle';
 
 /**
  * Registry of all available 3D styles
@@ -21,6 +23,7 @@ export const STYLES: Record<string, QRStyleGenerator> = {
   tree: treeStyle,
   island: islandStyle,
   zen: zenStyle,
+  photo: photoStyle,
 };
 
 /**
@@ -30,6 +33,7 @@ export const AVAILABLE_STYLES: QRStyleGenerator[] = [
   treeStyle,
   islandStyle,
   zenStyle,
+  photoStyle,
 ];
 
 /**

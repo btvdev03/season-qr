@@ -20,6 +20,8 @@ export interface StyleGenerateParams {
   season: SeasonTheme;
   /** Base QR width/length in Three.js world units (default: 24) */
   sceneSize?: number;
+  /** Optional square-cropped data URL or image URL for the Photo Mosaic QR style */
+  photoDataUrl?: string | null;
 }
 
 /**

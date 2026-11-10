@@ -31,6 +31,7 @@ export interface SceneManagerConfig {
   initialUrl?: string;
   initialSeason?: string;
   initialStyle?: string;
+  initialPhotoUrl?: string | null;
   autoRotate?: boolean;
   onViewModeChange?: (mode: ViewMode) => void;
 }
@@ -55,8 +56,10 @@ export class SceneManager {
   private currentUrl: string;
   private currentSeason: SeasonTheme;
   private currentStyle: QRStyleGenerator;
+  private currentPhotoUrl: string | null = null;
   private currentMatrix: QRMatrix | null = null;
   private viewMode: ViewMode = 'isometric';
+  private weatherEnabled: boolean = true;
 
   // Animation Loop State
   private animationFrameId: number | null = null;
@@ -125,6 +128,7 @@ export class SceneManager {
     this.currentUrl = config.initialUrl ?? 'https://btvdev03.github.io/season-qr/';
     this.currentSeason = getSeasonTheme(config.initialSeason ?? 'spring');
     this.currentStyle = getStyle(config.initialStyle ?? 'tree');
+    this.currentPhotoUrl = config.initialPhotoUrl ?? null;
     this.isAutoRotating = config.autoRotate ?? false;
     this.clock = new THREE.Clock();
 
@@ -292,6 +296,7 @@ export class SceneManager {
       matrix: this.currentMatrix,
       season: this.currentSeason,
       sceneSize: 24,
+      photoDataUrl: this.currentPhotoUrl,
     });
     this.scene.add(this.styleGroup);
 
@@ -307,24 +312,29 @@ export class SceneManager {
    */
   private updateAtmosphere(): void {
     const lighting = this.currentSeason.lighting;
+    const isPhoto = this.currentStyle.id === 'photo';
 
-    this.ambientLight.color.set(lighting.ambientColor);
-    this.ambientLight.intensity = lighting.ambientIntensity;
+    this.ambientLight.color.set(isPhoto ? '#ffffff' : lighting.ambientColor);
+    this.ambientLight.intensity = isPhoto ? 0.72 : lighting.ambientIntensity;
 
     if (this.hemiLight) {
-      this.hemiLight.color.set(lighting.skyColor);
-      this.hemiLight.groundColor.set(this.currentSeason.ground.groundSlab);
+      this.hemiLight.color.set(isPhoto ? '#ffffff' : lighting.skyColor);
+      this.hemiLight.groundColor.set(
+        isPhoto ? '#f1f5f9' : this.currentSeason.ground.groundSlab
+      );
       this.hemiLight.intensity = 0.35;
     }
 
-    this.sunLight.color.set(lighting.sunColor);
-    this.sunLight.intensity = lighting.sunIntensity;
+    this.sunLight.color.set(isPhoto ? '#ffffff' : lighting.sunColor);
+    this.sunLight.intensity = isPhoto ? 1.05 : lighting.sunIntensity;
     this.sunLight.position.set(...lighting.sunPosition);
 
     this.scene.fog = null;
 
     if (this.particles) {
       this.particles.setSeason(this.currentSeason);
+      this.particles.group.visible =
+        this.weatherEnabled && !isPhoto && this.scanModeProgress < 0.7;
     }
   }
 
@@ -334,6 +344,8 @@ export class SceneManager {
    */
   private applyScanModeDecor(): void {
     if (!this.styleGroup) return;
+
+    const isPhoto = this.currentStyle.id === 'photo';
 
     // 1. Morphing Leaf-to-QR Transformer (ICQR Magic Mechanic)
     const morphable = this.styleGroup as { updateMorph?: (p: number, time?: number) => void } | null;
@@ -350,51 +362,80 @@ export class SceneManager {
     }
 
     if (this.particles) {
-      // Hide drifting weather particles in top-down scan mode to avoid obstructing camera
-      this.particles.group.visible = this.scanModeProgress < 0.7;
+      // Hide drifting weather particles in top-down scan mode or Photo Sculpture gallery mode
+      this.particles.group.visible =
+        this.weatherEnabled && !isPhoto && this.scanModeProgress < 0.7;
     }
+
+    const baseAmbientColor = isPhoto
+      ? '#ffffff'
+      : this.currentSeason.lighting.ambientColor;
+    const baseAmbientIntensity = isPhoto
+      ? 0.72
+      : this.currentSeason.lighting.ambientIntensity;
+    const baseSunIntensity = isPhoto
+      ? 1.05
+      : this.currentSeason.lighting.sunIntensity;
+    const baseSkyColor = isPhoto
+      ? '#ffffff'
+      : this.currentSeason.lighting.skyColor;
 
     // In scan mode, keep dark QR modules deep ink-rich while light pavers emit pure #ffffff white
     if (this.scanModeProgress > 0.05) {
-      this.sunLight.castShadow = this.scanModeProgress < 0.4;
+      this.sunLight.castShadow = this.scanModeProgress < (isPhoto ? 0.15 : 0.4);
       this.ambientLight.intensity = THREE.MathUtils.lerp(
-        this.currentSeason.lighting.ambientIntensity,
-        0.95,
+        baseAmbientIntensity,
+        isPhoto ? 1.0 : 0.95,
         this.scanModeProgress
       );
       this.sunLight.intensity = THREE.MathUtils.lerp(
-        this.currentSeason.lighting.sunIntensity,
-        0.15,
+        baseSunIntensity,
+        isPhoto ? 0.08 : 0.15,
+        this.scanModeProgress
+      );
+      this.rimLight.intensity = THREE.MathUtils.lerp(
+        0.25,
+        isPhoto ? 0.04 : 0.25,
         this.scanModeProgress
       );
       if (this.hemiLight) {
-        this.hemiLight.intensity = THREE.MathUtils.lerp(0.35, 0.15, this.scanModeProgress);
+        this.hemiLight.intensity = THREE.MathUtils.lerp(
+          0.35,
+          isPhoto ? 0.12 : 0.15,
+          this.scanModeProgress
+        );
         this.tempHemiSkyCol
-          .set(this.currentSeason.lighting.skyColor)
+          .set(baseSkyColor)
           .lerp(this.pureWhiteCol, this.scanModeProgress);
         this.hemiLight.color.copy(this.tempHemiSkyCol);
       }
       // Smoothly neutralize ambient lighting to pure white in scan mode
       this.tempAmbientCol
-        .set(this.currentSeason.lighting.ambientColor)
+        .set(baseAmbientColor)
         .lerp(this.pureWhiteCol, this.scanModeProgress);
       this.ambientLight.color.copy(this.tempAmbientCol);
     } else {
       this.sunLight.castShadow = true;
-      this.ambientLight.intensity = this.currentSeason.lighting.ambientIntensity;
-      this.ambientLight.color.set(this.currentSeason.lighting.ambientColor);
-      this.sunLight.intensity = this.currentSeason.lighting.sunIntensity;
+      this.ambientLight.intensity = baseAmbientIntensity;
+      this.ambientLight.color.set(baseAmbientColor);
+      this.sunLight.intensity = baseSunIntensity;
+      this.rimLight.intensity = 0.25;
       if (this.hemiLight) {
         this.hemiLight.intensity = 0.35;
-        this.hemiLight.color.set(this.currentSeason.lighting.skyColor);
+        this.hemiLight.color.set(baseSkyColor);
       }
     }
   }
 
   /**
-   * Public API to update QR URL, Season, and/or Style
+   * Public API to update QR URL, Season, Style, and/or Uploaded Photo
    */
-  public updateScene(url?: string, seasonId?: string, styleId?: string): void {
+  public updateScene(
+    url?: string,
+    seasonId?: string,
+    styleId?: string,
+    photoUrl?: string | null
+  ): void {
     let needsRebuild = false;
 
     if (url !== undefined && url !== this.currentUrl) {
@@ -410,6 +451,13 @@ export class SceneManager {
     if (styleId !== undefined && styleId !== this.currentStyle.id) {
       this.currentStyle = getStyle(styleId);
       needsRebuild = true;
+    }
+
+    if (photoUrl !== undefined && photoUrl !== this.currentPhotoUrl) {
+      this.currentPhotoUrl = photoUrl;
+      if (this.currentStyle.id === 'photo') {
+        needsRebuild = true;
+      }
     }
 
     if (needsRebuild) {
@@ -515,13 +563,17 @@ export class SceneManager {
    * Toggles falling weather particles (petals, leaves, snow)
    */
   public setWeatherEnabled(enabled: boolean): void {
+    this.weatherEnabled = enabled;
     if (this.particles) {
-      this.particles.group.visible = enabled;
+      this.particles.group.visible =
+        enabled &&
+        this.currentStyle.id !== 'photo' &&
+        this.scanModeProgress < 0.7;
     }
   }
 
   public getWeatherEnabled(): boolean {
-    return this.particles ? this.particles.group.visible : true;
+    return this.weatherEnabled;
   }
 
   /**
@@ -650,7 +702,12 @@ export class SceneManager {
     }
 
     // 2. Weather particles animation (only animate when visible)
-    if (this.particles && this.particles.group.visible && this.scanModeProgress < 0.7) {
+    if (
+      this.particles &&
+      this.particles.group.visible &&
+      this.currentStyle.id !== 'photo' &&
+      this.scanModeProgress < 0.7
+    ) {
       this.particles.update(delta);
     }
 
@@ -662,6 +719,10 @@ export class SceneManager {
    * Deep disposal of Three.js objects to prevent memory leaks
    */
   private disposeObject(obj: THREE.Object3D): void {
+    if (obj.userData && typeof obj.userData.onDispose === 'function') {
+      (obj.userData.onDispose as () => void)();
+    }
+
     obj.traverse((child) => {
       if ((child as THREE.Mesh).geometry) {
         (child as THREE.Mesh).geometry.dispose();

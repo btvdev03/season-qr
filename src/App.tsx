@@ -16,6 +16,8 @@ import {
   Camera,
   ExternalLink,
   X,
+  ImagePlus,
+  Image as ImageIcon,
 } from 'lucide-react'
 import {
   recordQRGeneration,
@@ -27,6 +29,7 @@ import {
 export default function App() {
   const containerRef = useRef<HTMLDivElement>(null)
   const sceneManagerRef = useRef<SceneManager | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Core App State (Auto-detect season based on month: Tháng 11 = Đông Sa Pa)
   const [url, setUrl] = useState<string>('https://btvdev03.github.io/season-qr/')
@@ -38,7 +41,14 @@ export default function App() {
     }
     return getAutoSeason()
   })
-  const selectedStyle: StyleKey = 'tree'
+  const [selectedStyle, setSelectedStyle] = useState<StyleKey>(() => {
+    if (typeof window !== 'undefined') {
+      const s = new URLSearchParams(window.location.search).get('style')
+      if (s === 'photo' || s === 'tree' || s === 'island' || s === 'zen') return s
+    }
+    return 'tree'
+  })
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window !== 'undefined') {
       const v = new URLSearchParams(window.location.search).get('view')
@@ -70,6 +80,7 @@ export default function App() {
       initialUrl: url,
       initialSeason: actualSeason,
       initialStyle: selectedStyle,
+      initialPhotoUrl: uploadedPhotoUrl,
       autoRotate: false,
       onViewModeChange: (newMode) => {
         setViewMode(newMode)
@@ -114,13 +125,17 @@ export default function App() {
     }
   }, [])
 
-  // Sync QR URL, Season, and Style changes with the 3D scene
+  // Sync QR URL, Season, Style, and Uploaded Photo changes with the 3D scene
   useEffect(() => {
     if (sceneManagerRef.current) {
-      sceneManagerRef.current.updateScene(url, actualSeason, selectedStyle)
+      sceneManagerRef.current.updateScene(url, actualSeason, selectedStyle, uploadedPhotoUrl)
     }
+  }, [url, actualSeason, selectedStyle, uploadedPhotoUrl])
+
+  // Sync Sound Mute & Season changes
+  useEffect(() => {
     soundEngine.setMuted(isMuted, actualSeason)
-  }, [url, actualSeason, selectedStyle, isMuted])
+  }, [isMuted, actualSeason])
 
   // Sync ViewMode changes
   useEffect(() => {
@@ -134,6 +149,57 @@ export default function App() {
     const nextMuted = !isMuted
     setIsMuted(nextMuted)
     soundEngine.setMuted(nextMuted, actualSeason)
+  }
+
+  // Client-side Photo Upload: center-crops 1:1 square (max 1024px) on crisp white canvas
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (file.type && !file.type.startsWith('image/')) return
+
+    const objectUrl = URL.createObjectURL(file)
+    const img = new Image()
+
+    img.onload = () => {
+      try {
+        const naturalW = img.naturalWidth || img.width
+        const naturalH = img.naturalHeight || img.height
+        const cropSide = Math.min(naturalW, naturalH)
+        if (cropSide <= 0) return
+
+        const targetSize = Math.min(cropSide, 1024)
+        const sx = (naturalW - cropSide) / 2
+        const sy = (naturalH - cropSide) / 2
+
+        const canvas = document.createElement('canvas')
+        canvas.width = targetSize
+        canvas.height = targetSize
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, targetSize, targetSize)
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = 'high'
+        ctx.drawImage(img, sx, sy, cropSide, cropSide, 0, 0, targetSize, targetSize)
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92)
+        setUploadedPhotoUrl(dataUrl)
+        setSelectedStyle('photo')
+        recordQRGeneration().then(({ globalCount }) => {
+          setGlobalQRCount(globalCount)
+        })
+      } finally {
+        URL.revokeObjectURL(objectUrl)
+      }
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+    }
+
+    img.src = objectUrl
   }
 
   // URL Submit handler with automatic creation tracking
@@ -179,8 +245,9 @@ export default function App() {
         topDown: topDown,
       })
 
+      const themeTag = selectedStyle === 'photo' ? 'photo' : actualSeason
       const downloadLink = document.createElement('a')
-      downloadLink.download = `SeasonQR-${actualSeason}-${topDown ? 'scan' : '3d'}-${exportQuality}-${Date.now()}.png`
+      downloadLink.download = `SeasonQR-${themeTag}-${topDown ? 'scan' : '3d'}-${exportQuality}-${Date.now()}.png`
       downloadLink.href = dataUrl
       document.body.appendChild(downloadLink)
       downloadLink.click()
@@ -199,10 +266,13 @@ export default function App() {
     }
   }
 
-  // Dynamic seasonal background styling for luxury museum atmosphere (pure crisp white in 90° scan mode)
+  // Dynamic seasonal / studio background styling (pure crisp white in 90° scan mode)
   const getSeasonBackgroundClass = () => {
     if (viewMode === 'topDown') {
       return 'from-white via-white to-white'
+    }
+    if (selectedStyle === 'photo') {
+      return 'from-[#f8fafc] via-[#f4f6f9] to-[#e9eef5]'
     }
     switch (actualSeason) {
       case 'spring':
@@ -221,6 +291,9 @@ export default function App() {
   const getSeasonAuraGradient = () => {
     if (viewMode === 'topDown') {
       return 'transparent'
+    }
+    if (selectedStyle === 'photo') {
+      return 'radial-gradient(circle at 50% 46%, rgba(148, 163, 184, 0.22) 0%, rgba(226, 232, 240, 0.42) 32%, transparent 68%)'
     }
     switch (actualSeason) {
       case 'spring':
@@ -297,11 +370,24 @@ export default function App() {
         </div>
       </header>
 
+      {/* Hidden File Input for Photo Upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handlePhotoUpload}
+        className="hidden"
+      />
+
       {/* 2. THREE.JS 3D VIEWPORT CONTAINER */}
       <div
         ref={containerRef}
         className="absolute inset-0 w-full h-full cursor-pointer z-0"
-        title="Chạm vào cây để xem mã QR (Góc nhìn cố định chuẩn)"
+        title={
+          selectedStyle === 'photo'
+            ? 'Chạm vào ảnh để xem mã QR (Góc nhìn cố định chuẩn)'
+            : 'Chạm vào cây để xem mã QR (Góc nhìn cố định chuẩn)'
+        }
       />
 
       {/* 3. FIXED CAMERA & PERFORMANCE BADGE (Bottom Left) */}
@@ -313,6 +399,7 @@ export default function App() {
       {/* 4. FLOATING PERSPECTIVE HINT PILL */}
       <div className="fixed bottom-[max(166px,calc(152px+env(safe-area-inset-bottom,0px)))] sm:bottom-[178px] inset-x-0 mx-auto w-fit max-w-[92vw] z-20 pointer-events-auto transition-all duration-300">
         <button
+          type="button"
           onClick={() => {
             const nextMode = viewMode === 'isometric' ? 'topDown' : 'isometric'
             setViewMode(nextMode)
@@ -323,20 +410,28 @@ export default function App() {
           {viewMode === 'isometric' ? (
             <>
               <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse shrink-0" />
-              <span>Chạm cây để xem mã QR (Góc 90°)</span>
+              <span>
+                {selectedStyle === 'photo'
+                  ? 'Chạm ảnh để biến thành mã QR (Góc 90°)'
+                  : 'Chạm cây để xem mã QR (Góc 90°)'}
+              </span>
             </>
           ) : (
             <>
               <RotateCcw className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Tap to see the tree (Xem cây 3D)</span>
+              <span>
+                {selectedStyle === 'photo'
+                  ? 'Chạm để quay lại khối ảnh 3D'
+                  : 'Tap to see the tree (Xem cây 3D)'}
+              </span>
             </>
           )}
         </button>
       </div>
 
       {/* 5. LUXURY FLOATING ISLAND COMMAND DOCK */}
-      <div className="fixed bottom-2.5 sm:bottom-5 inset-x-0 mx-auto z-20 w-full max-w-md sm:max-w-lg px-3 sm:px-4 pointer-events-auto pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]">
-        <div className="w-full bg-white/88 backdrop-blur-2xl rounded-3xl p-2.5 sm:p-3 shadow-[0_16px_40px_-8px_rgba(0,0,0,0.12)] border border-white/80 ring-1 ring-stone-900/5 flex flex-col gap-2 transition-all">
+      <div className="fixed bottom-2.5 sm:bottom-5 inset-x-0 mx-auto z-20 w-full max-w-md sm:max-w-lg px-2.5 sm:px-4 pointer-events-auto pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]">
+        <div className="w-full bg-white/88 backdrop-blur-2xl rounded-3xl p-2 sm:p-3 shadow-[0_16px_40px_-8px_rgba(0,0,0,0.12)] border border-white/80 ring-1 ring-stone-900/5 flex flex-col gap-2 transition-all">
           {/* Row 1: Integrated URL Input & Action Cluster */}
           <form
             onSubmit={handleUrlSubmit}
@@ -390,7 +485,9 @@ export default function App() {
               ) : (
                 <>
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Cây 3D</span>
+                  <span className="hidden sm:inline">
+                    {selectedStyle === 'photo' ? 'Ảnh 3D' : 'Cây 3D'}
+                  </span>
                 </>
               )}
             </button>
@@ -411,54 +508,84 @@ export default function App() {
             </button>
           </form>
 
-          {/* Row 2: Portfolio Quick Shortcut Pill */}
-          <div className="flex items-center justify-between px-1 text-[11px]">
-            <div className="flex items-center gap-1.5">
+          {/* Row 2: Portfolio Quick Shortcut & Photo Upload Pill */}
+          <div className="flex items-center justify-between gap-1.5 px-0.5 sm:px-1 text-[11px]">
+            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
               <button
                 type="button"
                 onClick={() => handleQuickPreset('https://btvdev03.github.io/')}
-                className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-900 border border-stone-200/80 hover:border-emerald-300 text-[10.5px] sm:text-xs font-semibold transition-all active:scale-95 shadow-2xs"
+                className="group inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-900 border border-stone-200/80 hover:border-emerald-300 text-[10px] sm:text-xs font-semibold transition-all active:scale-95 shadow-2xs whitespace-nowrap min-w-0"
                 title="Nhập URL Portfolio để tạo QR 3D"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 group-hover:scale-125 transition-transform" />
-                <span>Võ Tấn Bản • Portfolio</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 group-hover:scale-125 transition-transform shrink-0" />
+                <span className="truncate">Võ Tấn Bản • Portfolio</span>
               </button>
               <a
                 href="https://btvdev03.github.io/"
                 target="_blank"
                 rel="noreferrer"
-                className="p-1 rounded-full bg-stone-100 hover:bg-stone-200/80 text-stone-500 hover:text-stone-800 border border-stone-200/80 transition-all active:scale-95"
+                className="p-1 rounded-full bg-stone-100 hover:bg-stone-200/80 text-stone-500 hover:text-stone-800 border border-stone-200/80 transition-all active:scale-95 shrink-0"
                 title="Mở Portfolio Võ Tấn Bản trong tab mới"
               >
                 <ExternalLink className="w-3 h-3 text-stone-600" />
               </a>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full border text-[10px] sm:text-xs font-semibold transition-all active:scale-95 shadow-2xs whitespace-nowrap shrink-0 cursor-pointer ${
+                  selectedStyle === 'photo' || uploadedPhotoUrl
+                    ? 'bg-indigo-50/90 hover:bg-indigo-100 text-indigo-900 border-indigo-200/90 hover:border-indigo-300'
+                    : 'bg-stone-100 hover:bg-indigo-50 text-stone-700 hover:text-indigo-900 border-stone-200/80 hover:border-indigo-300'
+                }`}
+                title={
+                  uploadedPhotoUrl
+                    ? 'Chọn ảnh khác để tạo mã QR 3D'
+                    : 'Tải ảnh từ thiết bị để tạo mã QR 3D'
+                }
+              >
+                {uploadedPhotoUrl ? (
+                  <>
+                    <ImageIcon className="w-3 h-3 text-indigo-600 shrink-0" />
+                    <span>Đổi ảnh khác</span>
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus className="w-3 h-3 text-indigo-600 shrink-0" />
+                    <span>Tải ảnh tạo QR</span>
+                  </>
+                )}
+              </button>
             </div>
-            <span className="text-[10px] text-stone-400 font-medium hidden sm:inline">
+            <span className="text-[10px] text-stone-400 font-medium hidden sm:inline whitespace-nowrap shrink-0">
               100% Client-side
             </span>
           </div>
 
-          {/* Row 3: 4-Season Segmented Tab Switcher + Sound Toggle */}
-          <div className="flex items-center justify-between gap-1 p-1 rounded-2xl bg-stone-100/90 border border-stone-200/70 text-xs font-bold">
+          {/* Row 3: 4-Season + Photo Segmented Tab Switcher + Sound Toggle */}
+          <div className="flex items-center justify-between gap-0.5 sm:gap-1 p-1 rounded-2xl bg-stone-100/90 border border-stone-200/70 text-[10px] sm:text-xs font-bold">
             {[
               { id: 'spring', label: 'Xuân', icon: 'mai', activeClass: 'bg-amber-100 text-amber-950 border-amber-300/80 shadow-xs ring-1 ring-amber-400/20' },
               { id: 'summer', label: 'Hạ', icon: '☀️', activeClass: 'bg-emerald-100 text-emerald-950 border-emerald-300/80 shadow-xs ring-1 ring-emerald-400/20' },
               { id: 'autumn', label: 'Thu', icon: '🍁', activeClass: 'bg-orange-100 text-orange-950 border-orange-300/80 shadow-xs ring-1 ring-orange-400/20' },
               { id: 'winter', label: 'Đông', icon: '❄️', activeClass: 'bg-sky-100 text-sky-950 border-sky-300/80 shadow-xs ring-1 ring-sky-400/20' },
             ].map((s) => {
-              const isSelected = selectedSeason === s.id
+              const isSelected = selectedStyle !== 'photo' && selectedSeason === s.id
               return (
                 <button
                   key={s.id}
-                  onClick={() => setSelectedSeason(s.id as SeasonKey)}
-                  className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-xl border border-transparent transition-all ${
+                  type="button"
+                  onClick={() => {
+                    setSelectedSeason(s.id as SeasonKey)
+                    setSelectedStyle('tree')
+                  }}
+                  className={`flex-1 min-w-0 flex items-center justify-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-1 sm:py-1.5 rounded-xl border border-transparent transition-all whitespace-nowrap cursor-pointer ${
                     isSelected
                       ? s.activeClass
                       : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
                   }`}
                 >
                   {s.icon === 'mai' ? (
-                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none">
+                    <svg viewBox="0 0 24 24" className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" fill="none">
                       <circle cx="12" cy="6.2" r="4.1" fill="#eab308" />
                       <circle cx="17.5" cy="10.2" r="4.1" fill="#facc15" />
                       <circle cx="15.4" cy="16.6" r="4.1" fill="#eab308" />
@@ -468,17 +595,51 @@ export default function App() {
                       <circle cx="12" cy="12" r="1.2" fill="#fef08a" />
                     </svg>
                   ) : (
-                    <span className="text-xs sm:text-sm">{s.icon}</span>
+                    <span className="text-[11px] sm:text-sm leading-none shrink-0">{s.icon}</span>
                   )}
-                  <span className="text-[11px] sm:text-xs">{s.label}</span>
+                  <span className="text-[10px] sm:text-xs">{s.label}</span>
                 </button>
               )
             })}
 
+            {/* 5th Style Pill: Photo-to-QR */}
+            <button
+              type="button"
+              onClick={() => {
+                if (uploadedPhotoUrl) {
+                  setSelectedStyle('photo')
+                } else {
+                  fileInputRef.current?.click()
+                }
+              }}
+              className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-1 sm:px-1.5 py-1 sm:py-1.5 rounded-xl border border-transparent transition-all whitespace-nowrap cursor-pointer ${
+                selectedStyle === 'photo'
+                  ? 'bg-indigo-100 text-indigo-950 border-indigo-300/80 shadow-xs ring-1 ring-indigo-400/20'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
+              }`}
+              title={
+                uploadedPhotoUrl
+                  ? 'Chuyển sang mã QR từ ảnh của bạn'
+                  : 'Tải ảnh lên để tạo mã QR 3D'
+              }
+            >
+              {uploadedPhotoUrl ? (
+                <img
+                  src={uploadedPhotoUrl}
+                  alt="Ảnh đã tải"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full object-cover ring-1 ring-black/15 shrink-0"
+                />
+              ) : (
+                <ImagePlus className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+              )}
+              <span className="text-[10px] sm:text-xs">Ảnh</span>
+            </button>
+
             {/* Sound / Mute Toggle Button */}
             <button
+              type="button"
               onClick={toggleSound}
-              className={`p-1.5 ml-0.5 rounded-xl border transition-all shrink-0 ${
+              className={`p-1.5 ml-0.5 rounded-xl border transition-all shrink-0 cursor-pointer ${
                 isMuted
                   ? 'text-stone-400 hover:text-stone-700 border-transparent hover:bg-white/60'
                   : 'text-emerald-700 bg-white border-emerald-200 shadow-xs'
@@ -661,7 +822,7 @@ export default function App() {
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                   >
                     <Camera className="w-3.5 h-3.5 text-stone-300" />
-                    <span>Tải Ảnh Diorama 3D ({exportQuality.toUpperCase()})</span>
+                    <span>Tải Ảnh Khối 3D ({exportQuality.toUpperCase()})</span>
                   </button>
                 </div>
               </div>

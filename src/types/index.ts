@@ -1,6 +1,6 @@
 export type SeasonKey = 'auto' | 'spring' | 'summer' | 'autumn' | 'winter'
 export type ActualSeason = 'spring' | 'summer' | 'autumn' | 'winter'
-export type StyleKey = 'tree' | 'island' | 'zen'
+export type StyleKey = 'tree' | 'island' | 'zen' | 'photo'
 export type ViewMode = 'isometric' | 'topDown'
 
 export interface SeasonInfo {
