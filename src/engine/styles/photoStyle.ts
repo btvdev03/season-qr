@@ -102,6 +102,11 @@ function isStructuralAnchor(
   if (row === 6 || col === 6) return true;
   if (row === 8 && (col <= 8 || col >= size - 8)) return true;
   if (col === 8 && (row <= 8 || row >= size - 7)) return true;
+  // ISO/IEC 18004 Version Information 3x6 & 6x3 blocks (QR Version >= 7, size >= 45)
+  if (size >= 45) {
+    if (row >= size - 11 && row < size - 8 && col < 6) return true;
+    if (col >= size - 11 && col < size - 8 && row < 6) return true;
+  }
   for (let i = 0; i < alignmentCenters.length; i++) {
     const [ar, ac] = alignmentCenters[i];
     if (Math.abs(row - ar) <= 2 && Math.abs(col - ac) <= 2) {
@@ -866,6 +871,10 @@ export const photoStyle: QRStyleGenerator = {
         photoMat.map.dispose();
         photoMat.map = null;
         photoMat.emissiveMap = null;
+      }
+      if (qrOverlayMat.map) {
+        qrOverlayMat.map.dispose();
+        qrOverlayMat.map = null;
       }
     };
 

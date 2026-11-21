@@ -6,14 +6,20 @@
 
 export * from './types';
 export * from './treeStyle';
-export * from './islandStyle';
+export * from './cyberStyle';
 export * from './zenStyle';
+export * from './islandStyle';
+export * from './crystalStyle';
+export * from './brickStyle';
 export * from './photoStyle';
 
 import type { QRStyleGenerator } from './types';
 import { treeStyle } from './treeStyle';
-import { islandStyle } from './islandStyle';
+import { cyberStyle } from './cyberStyle';
 import { zenStyle } from './zenStyle';
+import { islandStyle } from './islandStyle';
+import { crystalStyle } from './crystalStyle';
+import { brickStyle } from './brickStyle';
 import { photoStyle } from './photoStyle';
 
 /**
@@ -21,8 +27,11 @@ import { photoStyle } from './photoStyle';
  */
 export const STYLES: Record<string, QRStyleGenerator> = {
   tree: treeStyle,
-  island: islandStyle,
+  cyber: cyberStyle,
   zen: zenStyle,
+  island: islandStyle,
+  crystal: crystalStyle,
+  brick: brickStyle,
   photo: photoStyle,
 };
 
@@ -31,8 +40,11 @@ export const STYLES: Record<string, QRStyleGenerator> = {
  */
 export const AVAILABLE_STYLES: QRStyleGenerator[] = [
   treeStyle,
-  islandStyle,
+  cyberStyle,
   zenStyle,
+  islandStyle,
+  crystalStyle,
+  brickStyle,
   photoStyle,
 ];
 

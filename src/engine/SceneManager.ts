@@ -65,6 +65,7 @@ export class SceneManager {
   private animationFrameId: number | null = null;
   private clock: THREE.Clock;
   private isAutoRotating: boolean = false;
+  private isCameraLocked: boolean = true;
   private onViewModeChange?: (mode: ViewMode) => void;
   private pointerStartX: number = 0;
   private pointerStartY: number = 0;
@@ -77,7 +78,7 @@ export class SceneManager {
   // Camera Smooth Transition State
   private isTransitioning: boolean = false;
   private transitionTime: number = 0;
-  private transitionDuration: number = 0.90; // Snappy, fluid, premium 60 FPS transition
+  private transitionDuration: number = 0.88; // Snappy, fluid, premium 60 FPS transition
   private startCamPos = new THREE.Vector3();
   private startCamTarget = new THREE.Vector3();
   private startCamUp = new THREE.Vector3();
@@ -91,10 +92,32 @@ export class SceneManager {
   private pureWhiteCol = new THREE.Color(0xffffff);
 
   // Presets & Dynamic Responsive Framing
-  private readonly ISO_TARGET = new THREE.Vector3(0, 5.8, 0);
+  // Slight +Z offset in SCAN_TARGET shifts the QR slightly upward on screen, centering it between top header & bottom dock
+  private readonly ISO_TARGET = new THREE.Vector3(0, 5.2, 0);
   private readonly ISO_UP = new THREE.Vector3(0, 1, 0);
-  private readonly SCAN_TARGET = new THREE.Vector3(0, 0, 0);
+  private readonly SCAN_TARGET = new THREE.Vector3(0, 0, 2.2);
   private readonly SCAN_UP = new THREE.Vector3(0, 0, -1); // Up vector makes QR orientation upright
+
+  /**
+   * Computes a responsive height scale factor for short/landscape viewports
+   * so fixed header and bottom dock controls never overlap the 3D scene or 90° QR code.
+   */
+  private getShortViewportScale(): number {
+    const h = Math.max(
+      this.container.clientHeight ||
+        (typeof window !== 'undefined' ? window.innerHeight : 800),
+      1
+    );
+    return THREE.MathUtils.clamp(620 / Math.min(h, 620), 1.0, 1.58);
+  }
+
+  /**
+   * Calculates the responsive scan target (shifts QR slightly higher on short landscape screens)
+   */
+  public getScanTarget(): THREE.Vector3 {
+    const shortScale = this.getShortViewportScale();
+    return new THREE.Vector3(0, 0, this.SCAN_TARGET.z * shortScale);
+  }
 
   /**
    * Calculates the exact orthogonal camera height needed to frame the QR patio
@@ -103,24 +126,36 @@ export class SceneManager {
    */
   public getScanCameraPos(): THREE.Vector3 {
     const aspect = this.getContainerAspect();
+    const shortScale = this.getShortViewportScale();
+    const scanTarget = this.getScanTarget();
     const vFovRad = (this.camera.fov * Math.PI) / 180;
     const tanHalf = Math.tan(vFovRad / 2);
     // In mobile portrait (aspect < 1), width is the primary constraint (44 units with margins).
-    // In desktop / square (aspect >= 1), height is the constraint, and top header + bottom dock require ~56 units framing.
+    // In desktop / square / landscape, height is the constraint (62 * shortScale leaves ample room for dock & header).
     const requiredYForWidth = 44 / (2 * tanHalf * aspect);
-    const requiredYForHeight = 56 / (2 * tanHalf);
+    const requiredYForHeight = (62 * shortScale) / (2 * tanHalf);
     const requiredY = Math.max(requiredYForWidth, requiredYForHeight);
-    return new THREE.Vector3(0, requiredY, 0.0001);
+    return new THREE.Vector3(0, requiredY, scanTarget.z + 0.0001);
   }
 
   /**
-   * Dynamically frames the 3D isometric diorama island so mobile portrait screens
-   * do not clip the tree foliage or meadow boundaries.
+   * Dynamically frames the 3D isometric diorama island so mobile portrait and landscape screens
+   * do not clip the tree foliage, pagoda spire, or skyscraper skyline.
    */
   public getIsoCameraPos(): THREE.Vector3 {
     const aspect = this.getContainerAspect();
-    const isoMultiplier = THREE.MathUtils.clamp(1.0 / Math.pow(Math.min(1.0, aspect), 0.70), 1.0, 2.15);
-    return new THREE.Vector3(30.5 * isoMultiplier, 22.0 * isoMultiplier, 30.5 * isoMultiplier);
+    const shortScale = this.getShortViewportScale();
+    const aspectMultiplier = THREE.MathUtils.clamp(
+      1.0 / Math.pow(Math.min(1.0, aspect), 0.72),
+      1.0,
+      2.15
+    );
+    const isoMultiplier = Math.max(aspectMultiplier, shortScale);
+    return new THREE.Vector3(
+      31.0 * isoMultiplier,
+      22.5 * isoMultiplier,
+      31.0 * isoMultiplier
+    );
   }
 
   constructor(config: SceneManagerConfig) {
@@ -149,11 +184,15 @@ export class SceneManager {
       powerPreference: 'high-performance',
       preserveDrawingBuffer: true,
     });
-    // Adaptive pixel ratio: 1.25 on mobile/tablets, 1.5 on desktop for high-DPI clarity with 0% GPU fillrate lag
-    const isMobile = typeof window !== 'undefined' && (window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent));
+    const isMobile =
+      typeof window !== 'undefined' &&
+      (window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent));
     const maxDpr = isMobile ? 1.25 : 1.5;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
-    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    this.renderer.setSize(
+      this.container.clientWidth,
+      this.container.clientHeight
+    );
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.enabled = true;
@@ -161,14 +200,15 @@ export class SceneManager {
 
     this.container.appendChild(this.renderer.domElement);
 
-    // 4. Setup OrbitControls - Fixed camera for zero lag & perfect framing
+    // 4. Setup OrbitControls - Fixed camera by default for zero lag & perfect framing
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = false;
-    this.controls.enableRotate = false; // Fixed camera as user requested
-    this.controls.enableZoom = false;   // No zoom lag
-    this.controls.enablePan = false;    // No pan drift
+    this.controls.enableRotate = false;
+    this.controls.enableZoom = false;
+    this.controls.enablePan = false;
     this.controls.target.copy(this.ISO_TARGET);
-    this.controls.autoRotate = false;
+    this.controls.autoRotate = this.isAutoRotating;
+    this.controls.autoRotateSpeed = 1.8;
 
     // 5. Setup Lighting
     this.ambientLight = new THREE.AmbientLight(
@@ -177,7 +217,6 @@ export class SceneManager {
     );
     this.scene.add(this.ambientLight);
 
-    // Natural sky & ground bounce for volumetric 3D botanical depth
     this.hemiLight = new THREE.HemisphereLight(
       this.currentSeason.lighting.skyColor,
       this.currentSeason.ground.groundSlab,
@@ -191,7 +230,6 @@ export class SceneManager {
     );
     this.sunLight.position.set(...this.currentSeason.lighting.sunPosition);
     this.sunLight.castShadow = true;
-    // 1024x1024 shadow map is sharp and 4x faster than 2048x2048!
     this.sunLight.shadow.mapSize.width = 1024;
     this.sunLight.shadow.mapSize.height = 1024;
     this.sunLight.shadow.camera.near = 0.5;
@@ -203,7 +241,6 @@ export class SceneManager {
     this.sunLight.shadow.bias = -0.0004;
     this.scene.add(this.sunLight);
 
-    // Subtle rim light for crisp contour separation
     this.rimLight = new THREE.DirectionalLight('#ffffff', 0.25);
     this.rimLight.position.set(-16, 22, -16);
     this.scene.add(this.rimLight);
@@ -253,7 +290,6 @@ export class SceneManager {
   private onPointerUp = (e: PointerEvent): void => {
     const dx = Math.abs(e.clientX - this.pointerStartX);
     const dy = Math.abs(e.clientY - this.pointerStartY);
-    // Tap without significant drag triggers mode toggle
     if (dx < 6 && dy < 6 && e.button === 0) {
       this.toggleViewMode();
     }
@@ -270,10 +306,16 @@ export class SceneManager {
 
     if (!this.isTransitioning) {
       if (this.viewMode === 'topDown') {
+        const scanTarget = this.getScanTarget();
         this.camera.position.copy(this.getScanCameraPos());
-        this.controls.target.copy(this.SCAN_TARGET);
+        this.controls.target.copy(scanTarget);
         this.camera.up.copy(this.SCAN_UP);
-        this.camera.lookAt(this.SCAN_TARGET);
+        this.camera.lookAt(scanTarget);
+      } else if (this.isCameraLocked && !this.isAutoRotating) {
+        this.camera.position.copy(this.getIsoCameraPos());
+        this.controls.target.copy(this.ISO_TARGET);
+        this.camera.up.copy(this.ISO_UP);
+        this.camera.lookAt(this.ISO_TARGET);
       }
     }
   }
@@ -308,25 +350,32 @@ export class SceneManager {
   }
 
   /**
-   * Updates lighting, fog and particle system for current season
+   * Updates lighting, fog and particle system for current season & style
    */
   private updateAtmosphere(): void {
     const lighting = this.currentSeason.lighting;
-    const isPhoto = this.currentStyle.id === 'photo';
+    const isNeutralStudio =
+      this.currentStyle.id === 'photo' ||
+      this.currentStyle.id === 'cyber' ||
+      this.currentStyle.id === 'brick';
 
-    this.ambientLight.color.set(isPhoto ? '#ffffff' : lighting.ambientColor);
-    this.ambientLight.intensity = isPhoto ? 0.72 : lighting.ambientIntensity;
+    this.ambientLight.color.set(
+      isNeutralStudio ? '#ffffff' : lighting.ambientColor
+    );
+    this.ambientLight.intensity = isNeutralStudio
+      ? 0.72
+      : lighting.ambientIntensity;
 
     if (this.hemiLight) {
-      this.hemiLight.color.set(isPhoto ? '#ffffff' : lighting.skyColor);
+      this.hemiLight.color.set(isNeutralStudio ? '#ffffff' : lighting.skyColor);
       this.hemiLight.groundColor.set(
-        isPhoto ? '#f1f5f9' : this.currentSeason.ground.groundSlab
+        isNeutralStudio ? '#f1f5f9' : this.currentSeason.ground.groundSlab
       );
       this.hemiLight.intensity = 0.35;
     }
 
-    this.sunLight.color.set(isPhoto ? '#ffffff' : lighting.sunColor);
-    this.sunLight.intensity = isPhoto ? 1.05 : lighting.sunIntensity;
+    this.sunLight.color.set(isNeutralStudio ? '#ffffff' : lighting.sunColor);
+    this.sunLight.intensity = isNeutralStudio ? 1.08 : lighting.sunIntensity;
     this.sunLight.position.set(...lighting.sunPosition);
 
     this.scene.fog = null;
@@ -334,7 +383,9 @@ export class SceneManager {
     if (this.particles) {
       this.particles.setSeason(this.currentSeason);
       this.particles.group.visible =
-        this.weatherEnabled && !isPhoto && this.scanModeProgress < 0.7;
+        this.weatherEnabled &&
+        this.currentStyle.id !== 'photo' &&
+        this.scanModeProgress < 0.7;
     }
   }
 
@@ -346,56 +397,62 @@ export class SceneManager {
     if (!this.styleGroup) return;
 
     const isPhoto = this.currentStyle.id === 'photo';
+    const isNeutralStudio =
+      isPhoto ||
+      this.currentStyle.id === 'cyber' ||
+      this.currentStyle.id === 'brick';
 
-    // 1. Morphing Leaf-to-QR Transformer (ICQR Magic Mechanic)
-    const morphable = this.styleGroup as { updateMorph?: (p: number, time?: number) => void } | null;
+    // 1. Morphing 3D-to-QR Transformer
+    const morphable = this.styleGroup as {
+      updateMorph?: (p: number, time?: number) => void;
+    } | null;
     if (morphable && typeof morphable.updateMorph === 'function') {
       morphable.updateMorph(this.scanModeProgress, this.clock.getElapsedTime());
     }
 
-    // 2. Generic above-ground decorations for other styles
+    // 2. Generic above-ground decorations fallback
     const decor = this.styleGroup.getObjectByName('DecorGroup');
-    if (decor) {
+    if (decor && (!morphable || typeof morphable.updateMorph !== 'function')) {
       const scale = Math.max(0.0001, 1 - Math.pow(this.scanModeProgress, 1.5));
       decor.scale.set(scale, scale, scale);
       decor.visible = this.scanModeProgress < 0.99;
     }
 
     if (this.particles) {
-      // Hide drifting weather particles in top-down scan mode or Photo Sculpture gallery mode
       this.particles.group.visible =
         this.weatherEnabled && !isPhoto && this.scanModeProgress < 0.7;
     }
 
-    const baseAmbientColor = isPhoto
+    const baseAmbientColor = isNeutralStudio
       ? '#ffffff'
       : this.currentSeason.lighting.ambientColor;
-    const baseAmbientIntensity = isPhoto
+    const baseAmbientIntensity = isNeutralStudio
       ? 0.72
       : this.currentSeason.lighting.ambientIntensity;
-    const baseSunIntensity = isPhoto
-      ? 1.05
+    const baseSunIntensity = isNeutralStudio
+      ? 1.08
       : this.currentSeason.lighting.sunIntensity;
-    const baseSkyColor = isPhoto
+    const baseSkyColor = isNeutralStudio
       ? '#ffffff'
       : this.currentSeason.lighting.skyColor;
 
     // In scan mode, keep dark QR modules deep ink-rich while light pavers emit pure #ffffff white
     if (this.scanModeProgress > 0.05) {
-      this.sunLight.castShadow = this.scanModeProgress < (isPhoto ? 0.15 : 0.4);
+      this.sunLight.castShadow =
+        this.scanModeProgress < (isPhoto ? 0.15 : 0.35);
       this.ambientLight.intensity = THREE.MathUtils.lerp(
         baseAmbientIntensity,
-        isPhoto ? 1.0 : 0.95,
+        isPhoto ? 1.0 : 0.96,
         this.scanModeProgress
       );
       this.sunLight.intensity = THREE.MathUtils.lerp(
         baseSunIntensity,
-        isPhoto ? 0.08 : 0.15,
+        isPhoto ? 0.08 : 0.14,
         this.scanModeProgress
       );
       this.rimLight.intensity = THREE.MathUtils.lerp(
         0.25,
-        isPhoto ? 0.04 : 0.25,
+        isPhoto ? 0.04 : 0.2,
         this.scanModeProgress
       );
       if (this.hemiLight) {
@@ -409,7 +466,6 @@ export class SceneManager {
           .lerp(this.pureWhiteCol, this.scanModeProgress);
         this.hemiLight.color.copy(this.tempHemiSkyCol);
       }
-      // Smoothly neutralize ambient lighting to pure white in scan mode
       this.tempAmbientCol
         .set(baseAmbientColor)
         .lerp(this.pureWhiteCol, this.scanModeProgress);
@@ -474,16 +530,24 @@ export class SceneManager {
     this.viewMode = mode;
     this.onViewModeChange?.(mode);
 
-    const targetPos = mode === 'topDown' ? this.getScanCameraPos() : this.getIsoCameraPos();
-    const targetLook = mode === 'topDown' ? this.SCAN_TARGET : this.ISO_TARGET;
+    const targetPos =
+      mode === 'topDown' ? this.getScanCameraPos() : this.getIsoCameraPos();
+    const targetLook =
+      mode === 'topDown' ? this.getScanTarget() : this.ISO_TARGET;
     const targetUp = mode === 'topDown' ? this.SCAN_UP : this.ISO_UP;
 
     if (mode === 'topDown') {
       this.controls.minPolarAngle = 0;
       this.controls.maxPolarAngle = Math.PI;
+      this.controls.enableRotate = false;
+      this.controls.enableZoom = false;
+      this.controls.autoRotate = false;
     } else {
       this.controls.minPolarAngle = Math.PI / 4.5;
       this.controls.maxPolarAngle = Math.PI / 2.15;
+      this.controls.enableRotate = !this.isCameraLocked;
+      this.controls.enableZoom = !this.isCameraLocked;
+      this.controls.autoRotate = this.isAutoRotating;
     }
 
     this.scanModeTarget = mode === 'topDown' ? 1 : 0;
@@ -494,14 +558,15 @@ export class SceneManager {
       this.controls.target.copy(targetLook);
       this.camera.up.copy(targetUp);
       this.camera.lookAt(targetLook);
-      this.controls.update();
+      if (mode === 'isometric') {
+        this.controls.update();
+      }
       this.isTransitioning = false;
       this.scanModeProgress = this.scanModeTarget;
       this.applyScanModeDecor();
       return;
     }
 
-    // Begin smooth lerp
     this.startCamPos.copy(this.camera.position);
     this.startCamTarget.copy(this.controls.target);
     this.startCamUp.copy(this.camera.up);
@@ -531,8 +596,12 @@ export class SceneManager {
    * Resets camera back to default angle for the current view mode
    */
   public resetCamera(): void {
-    const targetPos = this.viewMode === 'topDown' ? this.getScanCameraPos() : this.getIsoCameraPos();
-    const targetLook = this.viewMode === 'topDown' ? this.SCAN_TARGET : this.ISO_TARGET;
+    const targetPos =
+      this.viewMode === 'topDown'
+        ? this.getScanCameraPos()
+        : this.getIsoCameraPos();
+    const targetLook =
+      this.viewMode === 'topDown' ? this.getScanTarget() : this.ISO_TARGET;
     const targetUp = this.viewMode === 'topDown' ? this.SCAN_UP : this.ISO_UP;
 
     this.startCamPos.copy(this.camera.position);
@@ -548,11 +617,15 @@ export class SceneManager {
   }
 
   /**
-   * Enables or disables auto-rotation
+   * Enables or disables 360-degree auto-rotation in 3D Isometric mode
    */
   public setAutoRotate(enabled: boolean): void {
     this.isAutoRotating = enabled;
-    this.controls.autoRotate = enabled;
+    this.controls.autoRotate = enabled && this.viewMode === 'isometric';
+    this.controls.autoRotateSpeed = 1.8;
+    if (!enabled && this.viewMode === 'isometric' && this.isCameraLocked) {
+      this.resetCamera();
+    }
   }
 
   public getAutoRotate(): boolean {
@@ -560,7 +633,7 @@ export class SceneManager {
   }
 
   /**
-   * Toggles falling weather particles (petals, leaves, snow)
+   * Toggles falling weather particles (petals, leaves, snow, fireflies)
    */
   public setWeatherEnabled(enabled: boolean): void {
     this.weatherEnabled = enabled;
@@ -580,24 +653,27 @@ export class SceneManager {
    * Toggles fixed vs free OrbitControls camera rotation
    */
   public setCameraRotationLock(locked: boolean): void {
-    this.controls.enableRotate = !locked;
-    this.controls.enableZoom = !locked;
+    this.isCameraLocked = locked;
+    this.controls.enableRotate = !locked && this.viewMode === 'isometric';
+    this.controls.enableZoom = !locked && this.viewMode === 'isometric';
+    if (locked && !this.isAutoRotating) {
+      this.resetCamera();
+    }
   }
 
   public getCameraRotationLock(): boolean {
-    return !this.controls.enableRotate;
+    return this.isCameraLocked;
   }
 
   /**
    * Captures a high-resolution snapshot PNG Data URL.
-   * If options.topDown is true, snaps top-down with 100% unblocked QR base.
+   * Works reliably regardless of whether the user is currently in 3D or 90° Scan View.
    */
   public async exportSnapshot(options: SnapshotOptions = {}): Promise<string> {
-    const width = options.width ?? 1200;
-    const height = options.height ?? 1200;
+    const width = options.width ?? 1920;
+    const height = options.height ?? 1920;
     const renderTopDown = options.topDown ?? false;
 
-    // Save previous state
     const prevWidth = this.container.clientWidth;
     const prevHeight = this.container.clientHeight;
     const prevPos = this.camera.position.clone();
@@ -605,37 +681,42 @@ export class SceneManager {
     const prevUp = this.camera.up.clone();
     const prevProgress = this.scanModeProgress;
 
-    // Prepare temporary snapshot camera & decor state (centered for clean square export)
     if (renderTopDown) {
       this.scanModeProgress = 1;
       this.applyScanModeDecor();
       this.renderer.setClearColor('#ffffff', 1);
-      // At aspect = 1.0 and fov = 42, 58 units distance provides 44.5 units of view height, perfectly framing the 36-unit patio + quiet zone
-      this.camera.position.set(0, 58, 0.0001);
+      // Centered square framing for exported 90° QR image
+      this.camera.position.set(0, 56, 0.0001);
       this.camera.up.copy(this.SCAN_UP);
       this.camera.lookAt(0, 0, 0);
+    } else {
+      this.scanModeProgress = 0;
+      this.applyScanModeDecor();
+      this.renderer.setClearColor('#f8fafc', 1);
+      this.camera.position.set(31.5, 22.8, 31.5);
+      this.camera.up.copy(this.ISO_UP);
+      this.camera.lookAt(this.ISO_TARGET);
     }
 
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
 
-    // Render snapshot frame
     this.renderer.render(this.scene, this.camera);
     const dataUrl = this.renderer.domElement.toDataURL('image/png');
 
     // Restore original state
-    if (renderTopDown) {
-      this.renderer.setClearColor('#000000', 0);
-    }
+    this.renderer.setClearColor('#000000', 0);
     this.scanModeProgress = prevProgress;
     this.applyScanModeDecor();
     this.camera.position.copy(prevPos);
     this.controls.target.copy(prevTarget);
     this.camera.up.copy(prevUp);
     this.camera.lookAt(prevTarget);
-    this.controls.update();
-    this.camera.aspect = prevWidth / prevHeight;
+    if (this.viewMode === 'isometric') {
+      this.controls.update();
+    }
+    this.camera.aspect = prevWidth / Math.max(prevHeight, 1);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(prevWidth, prevHeight);
 
@@ -648,16 +729,14 @@ export class SceneManager {
   private animate = (): void => {
     this.animationFrameId = requestAnimationFrame(this.animate);
 
-    const delta = Math.min(this.clock.getDelta(), 0.1); // Cap delta to prevent jump after background tab
+    const delta = Math.min(this.clock.getDelta(), 0.1);
 
     // 1. Camera interpolation & Scan mode decor morphing
     if (this.isTransitioning) {
       this.transitionTime += delta;
       const t = Math.min(1, this.transitionTime / this.transitionDuration);
 
-      // Smooth ease-in-out cubic
-      const ease =
-        t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
       this.camera.position.lerpVectors(this.startCamPos, this.destCamPos, ease);
       this.controls.target.lerpVectors(
@@ -670,7 +749,6 @@ export class SceneManager {
         .normalize();
       this.camera.lookAt(this.controls.target);
 
-      // Morph decor scale & shadow
       this.scanModeProgress = THREE.MathUtils.lerp(
         this.scanModeStart,
         this.scanModeTarget,
@@ -684,24 +762,34 @@ export class SceneManager {
         this.controls.target.copy(this.destCamTarget);
         this.camera.up.copy(this.destCamUp);
         this.camera.lookAt(this.destCamTarget);
-        this.controls.update();
+        if (this.viewMode === 'isometric') {
+          this.controls.update();
+        }
         this.scanModeProgress = this.scanModeTarget;
         this.applyScanModeDecor();
       }
     } else {
-      if (this.controls.enabled && this.controls.enableRotate) {
+      if (
+        this.viewMode === 'isometric' &&
+        this.controls.enabled &&
+        (this.controls.enableRotate || this.isAutoRotating)
+      ) {
         this.controls.update();
       }
-      // Only tick real-time wind physics in 3D mode (avoiding redundant state recalculations)
       if (this.scanModeProgress < 0.05 && this.styleGroup) {
-        const morphable = this.styleGroup as { updateMorph?: (p: number, time?: number) => void } | null;
+        const morphable = this.styleGroup as {
+          updateMorph?: (p: number, time?: number) => void;
+        } | null;
         if (morphable && typeof morphable.updateMorph === 'function') {
-          morphable.updateMorph(this.scanModeProgress, this.clock.getElapsedTime());
+          morphable.updateMorph(
+            this.scanModeProgress,
+            this.clock.getElapsedTime()
+          );
         }
       }
     }
 
-    // 2. Weather particles animation (only animate when visible)
+    // 2. Weather particles animation
     if (
       this.particles &&
       this.particles.group.visible &&
@@ -723,6 +811,20 @@ export class SceneManager {
       (obj.userData.onDispose as () => void)();
     }
 
+    const disposeMaterial = (m: THREE.Material) => {
+      const matWithMaps = m as THREE.Material & {
+        map?: THREE.Texture | null;
+        emissiveMap?: THREE.Texture | null;
+      };
+      if (matWithMaps.map) {
+        matWithMaps.map.dispose();
+      }
+      if (matWithMaps.emissiveMap && matWithMaps.emissiveMap !== matWithMaps.map) {
+        matWithMaps.emissiveMap.dispose();
+      }
+      m.dispose();
+    };
+
     obj.traverse((child) => {
       if ((child as THREE.Mesh).geometry) {
         (child as THREE.Mesh).geometry.dispose();
@@ -731,9 +833,9 @@ export class SceneManager {
       if ((child as THREE.Mesh).material) {
         const mat = (child as THREE.Mesh).material;
         if (Array.isArray(mat)) {
-          mat.forEach((m) => m.dispose());
+          mat.forEach(disposeMaterial);
         } else {
-          mat.dispose();
+          disposeMaterial(mat);
         }
       }
     });
@@ -749,7 +851,10 @@ export class SceneManager {
     }
 
     window.removeEventListener('resize', this.onWindowResize);
-    this.renderer.domElement.removeEventListener('pointerdown', this.onPointerDown);
+    this.renderer.domElement.removeEventListener(
+      'pointerdown',
+      this.onPointerDown
+    );
     this.renderer.domElement.removeEventListener('pointerup', this.onPointerUp);
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
